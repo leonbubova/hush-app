@@ -17,6 +17,8 @@ import androidx.compose.animation.core.*
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
@@ -57,6 +59,12 @@ class MainActivity : ComponentActivity() {
                     onSaveApiKey = { viewModel.saveApiKey(it) },
                     onShowApiKeyDialog = { viewModel.showApiKeyDialog() },
                     onDismissApiKeyDialog = { viewModel.dismissApiKeyDialog() },
+                    onClearHistory = { viewModel.clearHistory() },
+                    onCopyText = { text ->
+                        val clipboard = getSystemService(CLIPBOARD_SERVICE) as android.content.ClipboardManager
+                        clipboard.setPrimaryClip(android.content.ClipData.newPlainText("Transcription", text))
+                        android.widget.Toast.makeText(this, "Copied", android.widget.Toast.LENGTH_SHORT).show()
+                    },
                     onEnableAccessibility = {
                         startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS))
                     },
@@ -107,6 +115,8 @@ fun FlowVoiceScreen(
     onSaveApiKey: (String) -> Unit,
     onShowApiKeyDialog: () -> Unit,
     onDismissApiKeyDialog: () -> Unit,
+    onClearHistory: () -> Unit,
+    onCopyText: (String) -> Unit = {},
     onEnableAccessibility: () -> Unit = {},
 ) {
     val isRecording = state.dictationState == DictationService.DictationState.RECORDING
@@ -127,14 +137,14 @@ fun FlowVoiceScreen(
             TopAppBar(
                 title = {
                     Text(
-                        "FlowVoice",
+                        "Hush",
                         fontWeight = FontWeight.Bold,
                         color = Color.White
                     )
                 },
                 actions = {
-                    TextButton(onClick = onShowApiKeyDialog) {
-                        Text("API Key", color = Color.White.copy(alpha = 0.7f))
+                    IconButton(onClick = onShowApiKeyDialog) {
+                        Text("\u2699", fontSize = 20.sp, color = Color.White.copy(alpha = 0.7f))
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent)
@@ -145,14 +155,13 @@ fun FlowVoiceScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
-                .padding(24.dp),
+                .padding(horizontal = 24.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.SpaceBetween,
         ) {
             // Status text
             Column(
                 horizontalAlignment = Alignment.CenterHorizontally,
-                modifier = Modifier.padding(top = 40.dp)
+                modifier = Modifier.padding(top = 16.dp)
             ) {
                 Text(
                     text = when (state.dictationState) {
@@ -172,7 +181,7 @@ fun FlowVoiceScreen(
                     }
                 )
 
-                Spacer(Modifier.height(8.dp))
+                Spacer(Modifier.height(4.dp))
 
                 Text(
                     text = when (state.dictationState) {
@@ -187,6 +196,8 @@ fun FlowVoiceScreen(
                     textAlign = TextAlign.Center,
                 )
             }
+
+            Spacer(Modifier.height(16.dp))
 
             // Accessibility setup banner
             if (!state.accessibilityEnabled) {
@@ -223,6 +234,7 @@ fun FlowVoiceScreen(
                         )
                     }
                 }
+                Spacer(Modifier.height(16.dp))
             }
 
             // Mic button
@@ -232,33 +244,64 @@ fun FlowVoiceScreen(
                 onClick = onToggle,
             )
 
-            // Last transcription
-            if (state.lastTranscription.isNotBlank()) {
-                Card(
+            Spacer(Modifier.height(20.dp))
+
+            // History section
+            if (state.history.isNotEmpty()) {
+                Row(
                     modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(16.dp),
-                    colors = CardDefaults.cardColors(
-                        containerColor = Color.White.copy(alpha = 0.08f)
-                    )
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    Column(modifier = Modifier.padding(16.dp)) {
+                    Text(
+                        "History",
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        color = Color.White.copy(alpha = 0.5f),
+                    )
+                    TextButton(onClick = onClearHistory) {
                         Text(
-                            "Last transcription",
-                            fontSize = 12.sp,
+                            "Clear",
+                            fontSize = 13.sp,
                             color = Color.White.copy(alpha = 0.4f),
-                            fontWeight = FontWeight.Medium,
-                        )
-                        Spacer(Modifier.height(8.dp))
-                        Text(
-                            state.lastTranscription,
-                            fontSize = 16.sp,
-                            color = Color.White.copy(alpha = 0.9f),
-                            lineHeight = 24.sp,
                         )
                     }
                 }
+
+                LazyColumn(
+                    modifier = Modifier.fillMaxWidth().weight(1f),
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                    contentPadding = PaddingValues(bottom = 24.dp),
+                ) {
+                    itemsIndexed(state.history) { index, text ->
+                        Card(
+                            modifier = Modifier.fillMaxWidth().clickable { onCopyText(text) },
+                            shape = RoundedCornerShape(12.dp),
+                            colors = CardDefaults.cardColors(
+                                containerColor = if (index == 0)
+                                    Color.White.copy(alpha = 0.10f)
+                                else
+                                    Color.White.copy(alpha = 0.05f)
+                            )
+                        ) {
+                            Text(
+                                text,
+                                fontSize = 15.sp,
+                                color = Color.White.copy(alpha = if (index == 0) 0.9f else 0.6f),
+                                lineHeight = 22.sp,
+                                modifier = Modifier.padding(14.dp),
+                            )
+                        }
+                    }
+                }
             } else {
-                Spacer(Modifier.height(1.dp))
+                Spacer(Modifier.weight(1f))
+                Text(
+                    "Your transcriptions will appear here",
+                    fontSize = 14.sp,
+                    color = Color.White.copy(alpha = 0.3f),
+                )
+                Spacer(Modifier.weight(1f))
             }
         }
     }
@@ -328,35 +371,81 @@ fun ApiKeyDialog(
     onSave: (String) -> Unit,
     onDismiss: () -> Unit,
 ) {
-    var key by remember { mutableStateOf(currentKey) }
+    val hasKey = currentKey.isNotBlank()
+    var isEditing by remember { mutableStateOf(!hasKey) }
+    var key by remember { mutableStateOf("") }
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Voxtral API Key") },
+        title = { Text("API Key") },
         text = {
             Column {
-                Text(
-                    "Enter your Mistral AI API key for transcription.",
-                    fontSize = 14.sp,
-                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
-                )
-                Spacer(Modifier.height(16.dp))
-                OutlinedTextField(
-                    value = key,
-                    onValueChange = { key = it },
-                    label = { Text("API Key") },
-                    singleLine = true,
-                    modifier = Modifier.fillMaxWidth(),
-                )
+                if (!isEditing && hasKey) {
+                    Text(
+                        "Your Mistral API key is set.",
+                        fontSize = 14.sp,
+                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
+                    )
+                    Spacer(Modifier.height(12.dp))
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(12.dp))
+                            .background(MaterialTheme.colorScheme.surfaceVariant)
+                            .padding(horizontal = 16.dp, vertical = 14.dp),
+                    ) {
+                        Text(
+                            "············${currentKey.takeLast(4)}",
+                            fontSize = 16.sp,
+                            color = MaterialTheme.colorScheme.onSurface,
+                            modifier = Modifier.weight(1f),
+                        )
+                    }
+                    Spacer(Modifier.height(8.dp))
+                    TextButton(onClick = { isEditing = true }) {
+                        Text("Change key")
+                    }
+                } else {
+                    Text(
+                        if (hasKey) "Enter your new API key." else "Enter your Mistral AI API key for transcription.",
+                        fontSize = 14.sp,
+                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
+                    )
+                    Spacer(Modifier.height(16.dp))
+                    OutlinedTextField(
+                        value = key,
+                        onValueChange = { key = it },
+                        label = { Text("API Key") },
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                }
             }
         },
         confirmButton = {
-            TextButton(onClick = { onSave(key) }) {
-                Text("Save")
+            if (isEditing) {
+                TextButton(
+                    onClick = { onSave(key) },
+                    enabled = key.isNotBlank(),
+                ) {
+                    Text("Save")
+                }
+            } else {
+                TextButton(onClick = onDismiss) {
+                    Text("Done")
+                }
             }
         },
         dismissButton = {
-            TextButton(onClick = onDismiss) {
+            TextButton(onClick = {
+                if (isEditing && hasKey) {
+                    isEditing = false
+                    key = ""
+                } else {
+                    onDismiss()
+                }
+            }) {
                 Text("Cancel")
             }
         },

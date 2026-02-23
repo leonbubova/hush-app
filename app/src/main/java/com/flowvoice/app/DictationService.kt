@@ -6,10 +6,13 @@ import android.app.Service
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Intent
+import android.content.SharedPreferences
 import android.os.Binder
 import android.os.IBinder
 import android.util.Log
 import androidx.core.app.NotificationCompat
+import androidx.security.crypto.EncryptedSharedPreferences
+import androidx.security.crypto.MasterKey
 import kotlinx.coroutines.*
 
 class DictationService : Service() {
@@ -77,7 +80,7 @@ class DictationService : Service() {
 
         scope.launch {
             try {
-                val apiKey = getSharedPreferences("flowvoice", MODE_PRIVATE)
+                val apiKey = getEncryptedPrefs()
                     .getString("voxtral_api_key", "") ?: ""
                 if (apiKey.isBlank()) {
                     withContext(Dispatchers.Main) {
@@ -112,6 +115,19 @@ class DictationService : Service() {
         }
     }
 
+    private fun getEncryptedPrefs(): SharedPreferences {
+        val masterKey = MasterKey.Builder(this)
+            .setKeyScheme(MasterKey.KeyScheme.AES256_GCM)
+            .build()
+        return EncryptedSharedPreferences.create(
+            this,
+            "flowvoice_secure",
+            masterKey,
+            EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
+            EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM,
+        )
+    }
+
     private fun copyToClipboard(text: String) {
         val clipboard = getSystemService(CLIPBOARD_SERVICE) as ClipboardManager
         clipboard.setPrimaryClip(ClipData.newPlainText("Transcription", text))
@@ -139,7 +155,7 @@ class DictationService : Service() {
         )
 
         val (title, body, icon) = when (state) {
-            DictationState.IDLE -> Triple("FlowVoice", "Tap to start dictating", R.drawable.ic_mic)
+            DictationState.IDLE -> Triple("Hush", "Tap to start dictating", R.drawable.ic_mic)
             DictationState.RECORDING -> Triple("Recording...", "Tap to stop", R.drawable.ic_mic_active)
             DictationState.PROCESSING -> Triple("Processing...", "Transcribing your audio", R.drawable.ic_mic)
             DictationState.DONE -> Triple("Copied to clipboard!", text?.take(80) ?: "", R.drawable.ic_mic)

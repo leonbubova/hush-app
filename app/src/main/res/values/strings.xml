@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">FlowVoice</string>
-    <string name="accessibility_description">Allows FlowVoice to detect volume button double-tap to start/stop dictation from any screen.</string>
+    <string name="app_name">Hush</string>
+    <string name="accessibility_description">Allows Hush to detect volume button double-tap to start/stop dictation from any screen.</string>
 </resources>

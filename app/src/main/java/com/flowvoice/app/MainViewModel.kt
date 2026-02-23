@@ -5,18 +5,22 @@ import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
 import android.content.ServiceConnection
+import android.content.SharedPreferences
 import android.os.IBinder
 import android.provider.Settings
 import android.text.TextUtils
 import androidx.lifecycle.AndroidViewModel
+import androidx.security.crypto.EncryptedSharedPreferences
+import androidx.security.crypto.MasterKey
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import org.json.JSONArray
 
 class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     data class UiState(
         val dictationState: DictationService.DictationState = DictationService.DictationState.IDLE,
-        val lastTranscription: String = "",
+        val history: List<String> = emptyList(),
         val errorMessage: String = "",
         val apiKey: String = "",
         val showApiKeyDialog: Boolean = false,
@@ -36,11 +40,20 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             bound = true
             service?.onStateChanged = { dictationState, text ->
                 _state.value = when (dictationState) {
-                    DictationService.DictationState.DONE -> _state.value.copy(
-                        dictationState = dictationState,
-                        lastTranscription = text ?: _state.value.lastTranscription,
-                        errorMessage = "",
-                    )
+                    DictationService.DictationState.DONE -> {
+                        val newText = text ?: ""
+                        if (newText.isNotBlank()) {
+                            val updated = listOf(newText) + _state.value.history
+                            saveHistory(updated)
+                            _state.value.copy(
+                                dictationState = dictationState,
+                                history = updated,
+                                errorMessage = "",
+                            )
+                        } else {
+                            _state.value.copy(dictationState = dictationState, errorMessage = "")
+                        }
+                    }
                     DictationService.DictationState.ERROR -> _state.value.copy(
                         dictationState = dictationState,
                         errorMessage = text ?: "Something went wrong",
@@ -59,11 +72,35 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
+    private fun getEncryptedPrefs(context: Context): SharedPreferences {
+        val masterKey = MasterKey.Builder(context)
+            .setKeyScheme(MasterKey.KeyScheme.AES256_GCM)
+            .build()
+        return EncryptedSharedPreferences.create(
+            context,
+            "flowvoice_secure",
+            masterKey,
+            EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
+            EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM,
+        )
+    }
+
+    private fun migratePrefsIfNeeded(context: Context, encryptedPrefs: SharedPreferences) {
+        val oldPrefs = context.getSharedPreferences("flowvoice", Context.MODE_PRIVATE)
+        val oldKey = oldPrefs.getString("voxtral_api_key", null)
+        if (oldKey != null) {
+            encryptedPrefs.edit().putString("voxtral_api_key", oldKey).apply()
+            oldPrefs.edit().remove("voxtral_api_key").apply()
+        }
+    }
+
     init {
-        val prefs = application.getSharedPreferences("flowvoice", Context.MODE_PRIVATE)
+        val prefs = getEncryptedPrefs(application)
+        migratePrefsIfNeeded(application, prefs)
         val savedKey = prefs.getString("voxtral_api_key", "") ?: ""
         _state.value = _state.value.copy(
             apiKey = savedKey,
+            history = loadHistory(),
             showApiKeyDialog = savedKey.isBlank(),
             accessibilityEnabled = isAccessibilityEnabled(),
         )
@@ -83,7 +120,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     fun saveApiKey(key: String) {
         val context = getApplication<Application>()
-        context.getSharedPreferences("flowvoice", Context.MODE_PRIVATE)
+        getEncryptedPrefs(context)
             .edit()
             .putString("voxtral_api_key", key.trim())
             .apply()
@@ -96,6 +133,25 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     fun dismissApiKeyDialog() {
         _state.value = _state.value.copy(showApiKeyDialog = false)
+    }
+
+    fun clearHistory() {
+        val context = getApplication<Application>()
+        getEncryptedPrefs(context).edit().remove("history").apply()
+        _state.value = _state.value.copy(history = emptyList())
+    }
+
+    private fun loadHistory(): List<String> {
+        val context = getApplication<Application>()
+        val json = getEncryptedPrefs(context).getString("history", null) ?: return emptyList()
+        val arr = JSONArray(json)
+        return (0 until arr.length()).map { arr.getString(it) }
+    }
+
+    private fun saveHistory(history: List<String>) {
+        val context = getApplication<Application>()
+        val arr = JSONArray(history)
+        getEncryptedPrefs(context).edit().putString("history", arr.toString()).apply()
     }
 
     fun refreshAccessibilityStatus() {
