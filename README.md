@@ -117,20 +117,40 @@ DictationService.stopRecording()
 - Mistral Voxtral API for speech-to-text
 - Coroutines for async transcription
 
+## Compatibility
+
+- Android 8.0 (Oreo) and up — minSdk 26
+- Tested on Pixel 9 Pro (Android 15)
+
 ## Building
 
 Requires JDK 17 and Android SDK (no Android Studio needed):
 
 ```bash
+# Debug build
 JAVA_HOME=/opt/homebrew/opt/openjdk@17 \
 ANDROID_HOME=/opt/homebrew/share/android-commandlinetools \
 ./gradlew assembleDebug
+
+# Release build (requires signing config in local.properties)
+JAVA_HOME=/opt/homebrew/opt/openjdk@17 \
+ANDROID_HOME=/opt/homebrew/share/android-commandlinetools \
+./gradlew assembleRelease
+```
+
+For release builds, add to `local.properties` (not committed to git):
+
+```
+RELEASE_STORE_FILE=/path/to/keystore
+RELEASE_STORE_PASSWORD=your-password
+RELEASE_KEY_ALIAS=your-alias
+RELEASE_KEY_PASSWORD=your-password
 ```
 
 Install on device:
 
 ```bash
-adb install -r app/build/outputs/apk/debug/app-debug.apk
+adb install -r app/build/outputs/apk/release/app-release.apk
 ```
 
 ## Permissions
@@ -140,3 +160,9 @@ adb install -r app/build/outputs/apk/debug/app-debug.apk
 - `FOREGROUND_SERVICE` / `FOREGROUND_SERVICE_MICROPHONE` — background recording
 - `POST_NOTIFICATIONS` — status notification
 - Accessibility Service — volume key detection + text field injection
+
+## Security
+
+- API keys are stored in Android EncryptedSharedPreferences (AES-256)
+- No credentials are included in the APK — each user provides their own Mistral API key
+- Release keystore and passwords are kept in `local.properties` (gitignored)
