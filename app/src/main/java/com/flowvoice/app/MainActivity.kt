@@ -33,6 +33,8 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.text.font.Font
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -42,6 +44,11 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.flowvoice.app.ui.theme.FlowVoiceTheme
 import kotlin.math.cos
 import kotlin.math.sin
+
+private val PlayfairDisplay = FontFamily(
+    Font(R.font.playfair_display_regular, weight = FontWeight.Normal),
+    Font(R.font.playfair_display_bold, weight = FontWeight.Bold),
+)
 
 class MainActivity : ComponentActivity() {
 
@@ -145,8 +152,9 @@ fun FlowVoiceScreen(
                 title = {
                     Text(
                         "Hush",
+                        fontFamily = PlayfairDisplay,
                         fontWeight = FontWeight.Bold,
-                        color = Color.White
+                        color = Color.White,
                     )
                 },
                 actions = {
@@ -191,14 +199,10 @@ fun FlowVoiceScreen(
                         DictationService.DictationState.DONE -> "Copied!"
                         DictationService.DictationState.ERROR -> "Error"
                     },
-                    fontSize = 28.sp,
-                    fontWeight = FontWeight.SemiBold,
-                    color = when (state.dictationState) {
-                        DictationService.DictationState.RECORDING -> Color(0xFF6C63FF)
-                        DictationService.DictationState.DONE -> Color(0xFF4CAF50)
-                        DictationService.DictationState.ERROR -> Color(0xFFEF5350)
-                        else -> Color.White
-                    }
+                    fontSize = 32.sp,
+                    fontFamily = PlayfairDisplay,
+                    fontWeight = FontWeight.Normal,
+                    color = Color.White,
                 )
 
                 Spacer(Modifier.height(4.dp))
@@ -211,13 +215,31 @@ fun FlowVoiceScreen(
                         DictationService.DictationState.DONE -> "Text copied to clipboard"
                         DictationService.DictationState.ERROR -> state.errorMessage.ifBlank { "Something went wrong" }
                     },
-                    fontSize = 14.sp,
-                    color = Color.White.copy(alpha = 0.5f),
+                    fontSize = 15.sp,
+                    fontFamily = PlayfairDisplay,
+                    color = Color.White.copy(alpha = 0.55f),
                     textAlign = TextAlign.Center,
                 )
             }
 
             Spacer(Modifier.height(24.dp))
+
+            // Mic button — fixed height so it stays in position regardless of history
+            val hasHistory = state.history.isNotEmpty()
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .then(if (hasHistory) Modifier.weight(1f) else Modifier.height(300.dp)),
+                contentAlignment = Alignment.Center,
+            ) {
+                MicButton(
+                    isRecording = isRecording,
+                    isProcessing = isProcessing,
+                    onClick = onToggle,
+                )
+            }
+
+            Spacer(Modifier.height(8.dp))
 
             // Accessibility setup banner
             if (!state.accessibilityEnabled) {
@@ -257,24 +279,8 @@ fun FlowVoiceScreen(
                 Spacer(Modifier.height(16.dp))
             }
 
-            // Mic button
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .weight(1f),
-                contentAlignment = Alignment.Center,
-            ) {
-                MicButton(
-                    isRecording = isRecording,
-                    isProcessing = isProcessing,
-                    onClick = onToggle,
-                )
-            }
-
-            Spacer(Modifier.height(8.dp))
-
             // History section
-            if (state.history.isNotEmpty()) {
+            if (hasHistory) {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
@@ -283,6 +289,7 @@ fun FlowVoiceScreen(
                     Text(
                         "History",
                         fontSize = 16.sp,
+                        fontFamily = PlayfairDisplay,
                         fontWeight = FontWeight.Bold,
                         color = Color.White,
                     )
@@ -426,7 +433,7 @@ fun AnimatedBlobs(isRecording: Boolean) {
     Canvas(
         modifier = Modifier
             .fillMaxSize()
-            .blur(8.dp)
+            .blur(3.dp)
     ) {
         val cx = size.width / 2
         val cy = size.height * 0.33f

@@ -155,11 +155,11 @@ class DictationService : Service() {
         )
 
         val (title, body, icon) = when (state) {
-            DictationState.IDLE -> Triple("Hush", "Tap to start dictating", R.drawable.ic_mic)
-            DictationState.RECORDING -> Triple("Recording...", "Tap to stop", R.drawable.ic_mic_active)
-            DictationState.PROCESSING -> Triple("Processing...", "Transcribing your audio", R.drawable.ic_mic)
-            DictationState.DONE -> Triple("Copied to clipboard!", text?.take(80) ?: "", R.drawable.ic_mic)
-            DictationState.ERROR -> Triple("Error", text ?: "Something went wrong", R.drawable.ic_mic)
+            DictationState.IDLE -> Triple("Hush", "Tap to start dictating", R.drawable.ic_notif)
+            DictationState.RECORDING -> Triple("Recording...", "Tap to stop", R.drawable.ic_notif)
+            DictationState.PROCESSING -> Triple("Processing...", "Transcribing your audio", R.drawable.ic_notif)
+            DictationState.DONE -> Triple("Copied to clipboard!", text?.take(80) ?: "", R.drawable.ic_notif)
+            DictationState.ERROR -> Triple("Error", text ?: "Something went wrong", R.drawable.ic_notif)
         }
 
         val actionLabel = if (state == DictationState.RECORDING) "Stop" else "Record"
@@ -171,7 +171,7 @@ class DictationService : Service() {
             .setContentIntent(openPending)
             .setOngoing(true)
             .setSilent(true)
-            .addAction(R.drawable.ic_mic, actionLabel, togglePending)
+            .addAction(R.drawable.ic_notif, actionLabel, togglePending)
             .build()
     }
 

@@ -1,4 +1,4 @@
-# FlowVoice
+# Hush
 
 Android AI dictation app — speak anywhere, transcribe instantly. A native alternative to Wispr Flow.
 
@@ -9,10 +9,12 @@ Android AI dictation app — speak anywhere, transcribe instantly. A native alte
 - **Clipboard fallback** — text is always copied to clipboard, even when auto-inject is active
 - **Background service** — persistent foreground notification with quick-action controls
 - **Voxtral transcription** — powered by Mistral's Voxtral speech-to-text API
+- **Custom blob/ring UI** — dark theme with animated glowing blobs and minimal ring-based mic button
+- **Transcription history** — recent transcriptions stored locally with tap-to-copy
 
 ## How it works
 
-1. Enable the FlowVoice accessibility service in Settings → Accessibility
+1. Enable the Hush accessibility service in Settings → Accessibility
 2. Enter your Voxtral API key in the app
 3. Double-tap volume down to start recording (works from any app)
 4. Double-tap again to stop — audio is sent to Voxtral for transcription
