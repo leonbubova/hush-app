@@ -94,6 +94,8 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
+    private var serviceStarted = false
+
     init {
         val prefs = getEncryptedPrefs(application)
         migratePrefsIfNeeded(application, prefs)
@@ -104,7 +106,13 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             showApiKeyDialog = savedKey.isBlank(),
             accessibilityEnabled = isAccessibilityEnabled(),
         )
-        startAndBindService()
+    }
+
+    fun startServiceIfNeeded() {
+        if (!serviceStarted) {
+            startAndBindService()
+            serviceStarted = true
+        }
     }
 
     private fun startAndBindService() {

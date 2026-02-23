@@ -57,7 +57,11 @@ class MainActivity : ComponentActivity() {
 
     private val permissionLauncher = registerForActivityResult(
         ActivityResultContracts.RequestMultiplePermissions()
-    ) { /* permissions granted or denied, service will handle */ }
+    ) { results ->
+        if (results[Manifest.permission.RECORD_AUDIO] == true) {
+            viewModel.startServiceIfNeeded()
+        }
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -89,6 +93,9 @@ class MainActivity : ComponentActivity() {
 
     override fun onResume() {
         super.onResume()
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED) {
+            viewModel.startServiceIfNeeded()
+        }
         viewModel.refreshAccessibilityStatus()
     }
 

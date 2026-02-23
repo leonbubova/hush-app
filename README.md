@@ -12,13 +12,79 @@ Android AI dictation app — speak anywhere, transcribe instantly. A native alte
 - **Custom blob/ring UI** — dark theme with animated glowing blobs and minimal ring-based mic button
 - **Transcription history** — recent transcriptions stored locally with tap-to-copy
 
-## How it works
+## Setup Guide / Einrichtung
 
-1. Enable the Hush accessibility service in Settings → Accessibility
-2. Enter your Voxtral API key in the app
-3. Double-tap volume down to start recording (works from any app)
-4. Double-tap again to stop — audio is sent to Voxtral for transcription
-5. If a text field is focused, the transcription is auto-inserted; otherwise it's copied to clipboard
+### English
+
+#### Step 1: Get a Mistral API key
+
+1. Go to [console.mistral.ai](https://console.mistral.ai/) and create an account (or sign in)
+2. Navigate to **API Keys** in the left sidebar ([direct link](https://console.mistral.ai/api-keys/))
+3. Click **Create new key**
+4. Give it a name (e.g. "Hush") and click **Create**
+5. Copy the key — you'll need it in the next step
+
+#### Step 2: Install Hush
+
+1. Download the APK and open it on your Android phone
+2. If prompted, allow installation from unknown sources
+3. Open Hush — it will ask for microphone and notification permissions, grant both
+
+#### Step 3: Enter your API key
+
+1. Tap the gear icon (top right)
+2. Paste your Mistral API key
+3. Tap **Save**
+
+#### Step 4: Enable the accessibility service
+
+1. Tap the "Enable background shortcut" banner in the app
+2. This opens Android's accessibility settings
+3. Find **Hush** in the list and enable it
+4. Confirm the permission dialog
+
+#### Step 5: Start dictating
+
+- **In the app:** tap the ring to start/stop recording
+- **From anywhere:** double-tap volume down to start, double-tap again to stop
+- Transcribed text is automatically pasted into the focused text field, or copied to clipboard
+
+---
+
+### Deutsch
+
+#### Schritt 1: Mistral API-Key erstellen
+
+1. Gehe zu [console.mistral.ai](https://console.mistral.ai/) und erstelle ein Konto (oder melde dich an)
+2. Klicke links auf **API Keys** ([Direktlink](https://console.mistral.ai/api-keys/))
+3. Klicke auf **Create new key**
+4. Vergib einen Namen (z.B. "Hush") und klicke **Create**
+5. Kopiere den Key — du brauchst ihn gleich
+
+#### Schritt 2: Hush installieren
+
+1. Lade die APK herunter und oeffne sie auf deinem Android-Handy
+2. Falls noetig, erlaube die Installation aus unbekannten Quellen
+3. Oeffne Hush — die App fragt nach Mikrofon- und Benachrichtigungsrechten, beides erlauben
+
+#### Schritt 3: API-Key eingeben
+
+1. Tippe auf das Zahnrad-Symbol (oben rechts)
+2. Fuege deinen Mistral API-Key ein
+3. Tippe auf **Save**
+
+#### Schritt 4: Bedienungshilfe aktivieren
+
+1. Tippe auf das Banner "Enable background shortcut" in der App
+2. Es oeffnen sich die Android-Bedienungshilfe-Einstellungen
+3. Finde **Hush** in der Liste und aktiviere es
+4. Bestaetige den Berechtigungsdialog
+
+#### Schritt 5: Diktieren
+
+- **In der App:** Tippe auf den Ring um die Aufnahme zu starten/stoppen
+- **Von ueberall:** Doppelt auf Leiser-Taste druecken zum Starten, nochmal doppelt zum Stoppen
+- Der transkribierte Text wird automatisch in das aktive Textfeld eingefuegt oder in die Zwischenablage kopiert
 
 ## Architecture
 
