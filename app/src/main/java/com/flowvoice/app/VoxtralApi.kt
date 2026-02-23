@@ -5,11 +5,17 @@ import okhttp3.MultipartBody
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.RequestBody.Companion.asRequestBody
-import okhttp3.RequestBody.Companion.toRequestBody
 import org.json.JSONObject
 import android.util.Log
 import java.io.File
+import java.net.UnknownHostException
+import java.net.SocketTimeoutException
 import java.util.concurrent.TimeUnit
+
+sealed class TranscribeResult {
+    data class Success(val text: String) : TranscribeResult()
+    data class Error(val code: Int?, val message: String) : TranscribeResult()
+}
 
 object VoxtralApi {
 
@@ -22,8 +28,8 @@ object VoxtralApi {
         .writeTimeout(60, TimeUnit.SECONDS)
         .build()
 
-    fun transcribe(audioFile: File, apiKey: String): String? {
-        Log.d(TAG, "transcribe: file=${audioFile.absolutePath} size=${audioFile.length()} bytes, keyLength=${apiKey.length}")
+    fun transcribe(audioFile: File, apiKey: String, endpoint: String = ENDPOINT): TranscribeResult {
+        Log.i(TAG, "transcribe: file=${audioFile.absolutePath} size=${audioFile.length()} bytes, keyLength=${apiKey.length}")
 
         val body = MultipartBody.Builder()
             .setType(MultipartBody.FORM)
@@ -36,26 +42,38 @@ object VoxtralApi {
             .build()
 
         val request = Request.Builder()
-            .url(ENDPOINT)
+            .url(endpoint)
             .addHeader("Authorization", "Bearer $apiKey")
             .post(body)
             .build()
 
         return try {
-            Log.d(TAG, "transcribe: sending request...")
+            Log.i(TAG, "transcribe: sending request...")
             val response = client.newCall(request).execute()
             val responseBody = response.body?.string()
-            Log.d(TAG, "transcribe: response code=${response.code}, body=$responseBody")
+            Log.i(TAG, "transcribe: response code=${response.code}, body=$responseBody")
             if (response.isSuccessful) {
-                val json = JSONObject(responseBody ?: return null)
-                json.getString("text")
+                val json = JSONObject(responseBody ?: return TranscribeResult.Error(null, "Empty response from server"))
+                TranscribeResult.Success(json.getString("text"))
             } else {
-                Log.e(TAG, "transcribe: API error ${response.code}: $responseBody")
-                null
+                val message = when (response.code) {
+                    401 -> "Invalid API key"
+                    429 -> "Rate limited — try again in a moment"
+                    in 500..599 -> "Server error (${response.code})"
+                    else -> "API error ${response.code}"
+                }
+                Log.e(TAG, "transcribe: $message: $responseBody")
+                TranscribeResult.Error(response.code, message)
             }
+        } catch (e: UnknownHostException) {
+            Log.e(TAG, "transcribe: no internet", e)
+            TranscribeResult.Error(null, "No internet connection")
+        } catch (e: SocketTimeoutException) {
+            Log.e(TAG, "transcribe: timeout", e)
+            TranscribeResult.Error(null, "Request timed out")
         } catch (e: Exception) {
             Log.e(TAG, "transcribe: exception", e)
-            null
+            TranscribeResult.Error(null, "Network error: ${e.message ?: "unknown"}")
         }
     }
 }

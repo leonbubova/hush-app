@@ -6,6 +6,8 @@ import android.content.Context
 import android.content.Intent
 import android.content.ServiceConnection
 import android.os.IBinder
+import android.provider.Settings
+import android.text.TextUtils
 import androidx.lifecycle.AndroidViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -15,8 +17,10 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     data class UiState(
         val dictationState: DictationService.DictationState = DictationService.DictationState.IDLE,
         val lastTranscription: String = "",
+        val errorMessage: String = "",
         val apiKey: String = "",
         val showApiKeyDialog: Boolean = false,
+        val accessibilityEnabled: Boolean = false,
     )
 
     private val _state = MutableStateFlow(UiState())
@@ -30,8 +34,22 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             val localBinder = binder as DictationService.LocalBinder
             service = localBinder.getService()
             bound = true
-            service?.onStateChanged = { dictationState ->
-                _state.value = _state.value.copy(dictationState = dictationState)
+            service?.onStateChanged = { dictationState, text ->
+                _state.value = when (dictationState) {
+                    DictationService.DictationState.DONE -> _state.value.copy(
+                        dictationState = dictationState,
+                        lastTranscription = text ?: _state.value.lastTranscription,
+                        errorMessage = "",
+                    )
+                    DictationService.DictationState.ERROR -> _state.value.copy(
+                        dictationState = dictationState,
+                        errorMessage = text ?: "Something went wrong",
+                    )
+                    else -> _state.value.copy(
+                        dictationState = dictationState,
+                        errorMessage = "",
+                    )
+                }
             }
         }
 
@@ -46,7 +64,8 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         val savedKey = prefs.getString("voxtral_api_key", "") ?: ""
         _state.value = _state.value.copy(
             apiKey = savedKey,
-            showApiKeyDialog = savedKey.isBlank()
+            showApiKeyDialog = savedKey.isBlank(),
+            accessibilityEnabled = isAccessibilityEnabled(),
         )
         startAndBindService()
     }
@@ -79,8 +98,19 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         _state.value = _state.value.copy(showApiKeyDialog = false)
     }
 
-    fun updateLastTranscription(text: String) {
-        _state.value = _state.value.copy(lastTranscription = text)
+    fun refreshAccessibilityStatus() {
+        _state.value = _state.value.copy(accessibilityEnabled = isAccessibilityEnabled())
+    }
+
+    private fun isAccessibilityEnabled(): Boolean {
+        val context = getApplication<Application>()
+        val serviceName = ComponentName(context, FlowVoiceAccessibilityService::class.java).flattenToString()
+        val enabledServices = Settings.Secure.getString(
+            context.contentResolver,
+            Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES
+        ) ?: return false
+        return TextUtils.SimpleStringSplitter(':').apply { setString(enabledServices) }
+            .any { it.equals(serviceName, ignoreCase = true) }
     }
 
     override fun onCleared() {

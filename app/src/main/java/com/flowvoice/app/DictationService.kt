@@ -27,8 +27,9 @@ class DictationService : Service() {
     private val scope = CoroutineScope(Dispatchers.IO + SupervisorJob())
     private var audioRecorder: AudioRecorder? = null
     private var isRecording = false
+    private var isForegroundStarted = false
 
-    var onStateChanged: ((DictationState) -> Unit)? = null
+    var onStateChanged: ((DictationState, String?) -> Unit)? = null
 
     enum class DictationState {
         IDLE, RECORDING, PROCESSING, DONE, ERROR
@@ -42,10 +43,13 @@ class DictationService : Service() {
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+        if (!isForegroundStarted) {
+            startForeground(NOTIF_ID, buildNotification(DictationState.IDLE))
+            isForegroundStarted = true
+        }
         when (intent?.action) {
             ACTION_TOGGLE -> toggle()
         }
-        startForeground(NOTIF_ID, buildNotification(DictationState.IDLE))
         return START_STICKY
     }
 
@@ -54,16 +58,20 @@ class DictationService : Service() {
     }
 
     private fun startRecording() {
-        isRecording = true
-        updateState(DictationState.RECORDING)
-        audioRecorder?.start()
+        val started = audioRecorder?.start() ?: false
+        if (started) {
+            isRecording = true
+            updateState(DictationState.RECORDING)
+        } else {
+            updateState(DictationState.ERROR, "Microphone unavailable — check permissions")
+        }
     }
 
     private fun stopRecording() {
         isRecording = false
         updateState(DictationState.PROCESSING)
         val file = audioRecorder?.stop() ?: run {
-            updateState(DictationState.ERROR)
+            updateState(DictationState.ERROR, "Recorder failed to save audio")
             return
         }
 
@@ -73,26 +81,30 @@ class DictationService : Service() {
                     .getString("voxtral_api_key", "") ?: ""
                 if (apiKey.isBlank()) {
                     withContext(Dispatchers.Main) {
-                        updateState(DictationState.ERROR)
+                        updateState(DictationState.ERROR, "No API key configured")
                     }
                     return@launch
                 }
 
-                Log.d("DictationService", "Sending file to Voxtral: ${file.length()} bytes, apiKey length: ${apiKey.length}")
-                val transcription = VoxtralApi.transcribe(file, apiKey)
-                Log.d("DictationService", "Transcription result: $transcription")
+                Log.i("DictationService", "Sending file to Voxtral: ${file.length()} bytes, apiKey length: ${apiKey.length}")
+                val result = VoxtralApi.transcribe(file, apiKey)
+                Log.i("DictationService", "Transcription result: $result")
                 withContext(Dispatchers.Main) {
-                    if (transcription != null) {
-                        copyToClipboard(transcription)
-                        updateState(DictationState.DONE, transcription)
-                    } else {
-                        updateState(DictationState.ERROR)
+                    when (result) {
+                        is TranscribeResult.Success -> {
+                            copyToClipboard(result.text)
+                            sendBroadcast(Intent(FlowVoiceAccessibilityService.ACTION_INJECT_TEXT).setPackage(packageName))
+                            updateState(DictationState.DONE, result.text)
+                        }
+                        is TranscribeResult.Error -> {
+                            updateState(DictationState.ERROR, result.message)
+                        }
                     }
                 }
             } catch (e: Exception) {
                 Log.e("DictationService", "Error during transcription", e)
                 withContext(Dispatchers.Main) {
-                    updateState(DictationState.ERROR)
+                    updateState(DictationState.ERROR, "Unexpected error: ${e.message}")
                 }
             } finally {
                 file.delete()
@@ -108,7 +120,7 @@ class DictationService : Service() {
     private fun updateState(state: DictationState, text: String? = null) {
         val manager = getSystemService(NOTIFICATION_SERVICE) as android.app.NotificationManager
         manager.notify(NOTIF_ID, buildNotification(state, text))
-        onStateChanged?.invoke(state)
+        onStateChanged?.invoke(state, text)
     }
 
     private fun buildNotification(state: DictationState, text: String? = null): Notification {
@@ -131,7 +143,7 @@ class DictationService : Service() {
             DictationState.RECORDING -> Triple("Recording...", "Tap to stop", R.drawable.ic_mic_active)
             DictationState.PROCESSING -> Triple("Processing...", "Transcribing your audio", R.drawable.ic_mic)
             DictationState.DONE -> Triple("Copied to clipboard!", text?.take(80) ?: "", R.drawable.ic_mic)
-            DictationState.ERROR -> Triple("Error", "Something went wrong", R.drawable.ic_mic)
+            DictationState.ERROR -> Triple("Error", text ?: "Something went wrong", R.drawable.ic_mic)
         }
 
         val actionLabel = if (state == DictationState.RECORDING) "Stop" else "Record"

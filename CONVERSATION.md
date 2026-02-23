@@ -6,20 +6,21 @@ Android dictation app competing with Wispr Flow (no Android app exists). **Core 
 
 ---
 
-## Current Status: MVP Complete ✓
+## Current Status: Auto-inject Working ✓
 
-The following works end-to-end on a physical device:
+The following works end-to-end on a physical Pixel 9 Pro:
 
 1. App launches with dark Material 3 UI
 2. Prompts for microphone + notification permissions
 3. Prompts for Mistral API key (stored in SharedPreferences)
 4. Foreground service starts with persistent notification
-5. **Double-tap volume down** (in-app) toggles recording
+5. **Double-tap volume down** toggles recording **from any app** (via accessibility service)
 6. **Notification action button** toggles recording
 7. Notification updates: idle → recording → processing → done
 8. Audio recorded as m4a via MediaRecorder
 9. Sent to Voxtral batch API (`POST /v1/audio/transcriptions`)
 10. Transcription copied to clipboard automatically
+11. **If a text field is focused, transcription is auto-pasted at cursor position**
 
 ---
 
@@ -48,15 +49,17 @@ wispr-killer/
 │       ├── AndroidManifest.xml   # Permissions: INTERNET, RECORD_AUDIO, FOREGROUND_SERVICE, etc.
 │       ├── java/com/flowvoice/app/
 │       │   ├── FlowVoiceApp.kt       # Application class, notification channel setup
-│       │   ├── MainActivity.kt        # Compose UI, volume button detection, permissions
+│       │   ├── MainActivity.kt        # Compose UI, permissions
 │       │   ├── MainViewModel.kt       # UI state, service binding, API key management
-│       │   ├── DictationService.kt    # Foreground service, notification, recording orchestration
+│       │   ├── DictationService.kt    # Foreground service, notification, recording, clipboard + broadcast
+│       │   ├── FlowVoiceAccessibilityService.kt  # Volume key hotkey + auto-inject
 │       │   ├── AudioRecorder.kt       # MediaRecorder wrapper (m4a/AAC output)
 │       │   ├── VoxtralApi.kt          # OkHttp multipart POST to Mistral API
 │       │   └── ui/theme/Theme.kt      # Material 3 dark theme with dynamic colors
 │       └── res/
 │           ├── drawable/ic_mic.xml, ic_mic_active.xml
 │           ├── values/strings.xml, themes.xml, colors.xml
+│           ├── xml/accessibility_config.xml  # Accessibility service config
 │           └── mipmap-hdpi/ic_launcher.xml
 ```
 
@@ -64,18 +67,26 @@ wispr-killer/
 
 ### Core Flow
 ```
-MainActivity (Compose UI + volume key listener)
+FlowVoiceAccessibilityService (global volume key listener)
+    → double-tap volume down → starts DictationService
+
+MainActivity (Compose UI)
     ↕ binds to
 DictationService (foreground service + notification)
     → AudioRecorder (MediaRecorder → .m4a file)
     → VoxtralApi (OkHttp multipart POST → transcription text)
     → ClipboardManager (copies result)
+    → sendBroadcast(ACTION_INJECT_TEXT)
     → NotificationManager (updates status)
+
+FlowVoiceAccessibilityService (receives broadcast)
+    → findFocus(FOCUS_INPUT) → performAction(ACTION_PASTE)
 ```
 
 ### Key Technical Details
 
-- **Volume button detection:** `onKeyDown()` in Activity, 400ms double-tap window
+- **Volume button detection:** AccessibilityService `onKeyEvent()`, 400ms double-tap window, works from any app
+- **Auto-inject:** After clipboard copy, broadcast triggers ACTION_PASTE into focused input field; no-op if nothing focused
 - **Foreground service:** `FOREGROUND_SERVICE_MICROPHONE` type, `START_STICKY`
 - **Notification:** Low importance channel, silent, with toggle action button
 - **API:** `POST https://api.mistral.ai/v1/audio/transcriptions`, multipart/form-data, `Authorization: Bearer` header
@@ -111,3 +122,69 @@ $ANDROID_HOME/platform-tools/adb logcat -s "VoxtralApi:*" "DictationService:*"
 - [DontKillMyApp.com](https://dontkillmyapp.com) — OEM battery killing patterns
 - [Android Accessibility Service docs](https://developer.android.com/reference/android/accessibilityservice/AccessibilityService)
 - [VoiceInteractionService docs](https://developer.android.com/reference/android/service/voice/VoiceInteractionService)
+
+---
+
+## Session Log
+
+### Session 1 — 2026-02-23: MVP Built and Working
+
+**Timeline:**
+1. Started with zero Android dev environment (no Java, no SDK, no Android Studio)
+2. Chose native Kotlin + Jetpack Compose over Expo/React Native — right call, the app is 80% native services
+3. Installed entire toolchain via Homebrew in parallel while writing code (~700MB: OpenJDK 17, Android SDK 35, platform-tools)
+4. Scaffolded full project from scratch: 7 Kotlin files, Gradle config, manifest, resources
+5. First build attempt failed — `dependencyResolution` API wrong in settings.gradle.kts, fixed to `dependencyResolutionManagement`
+6. Second build failed — compileSdk 34 too old for androidx.core 1.15.0, bumped to 35
+7. Third build: success! 9.6MB APK
+8. USB debugging setup with Pixel 9 Pro was a journey — flaky cable, had to replug multiple times, device kept disappearing
+9. Installed APK, first test: "Error — check API key" on every recording
+10. Added logging, rebuilt, reinstalled — discovered **INTERNET permission was missing from manifest** (classic Android gotcha)
+11. One-line fix, rebuild, reinstall — **IT WORKS**. Full loop: double-tap volume → record → Voxtral transcription → clipboard
+
+**The moment:** First successful transcription copied to clipboard from voice on a Pixel 9 Pro. The entire MVP — from zero toolchain to working app — done in a single session with Claude Code.
+
+**What went right:**
+- Parallel strategy (install toolchain while writing code) saved significant time
+- Native Kotlin was the right call — no framework abstraction fighting us
+- Voxtral batch API is dead simple (multipart POST, m4a in, text out)
+- Foreground service + notification bar worked first try
+
+**What bit us:**
+- Forgot INTERNET permission (every Android dev has done this at least once)
+- USB cable issues — data connection kept dropping
+- No way to see app logs without device connected (added logging after the fact)
+
+**Code analysis done post-MVP (found several issues to fix):**
+- `onStateChanged` lambda drops the transcription text — last transcription card never renders
+- All errors show same "Check API key" message regardless of actual cause
+- `AudioRecorder.start()` has no try/catch — permission denial would crash
+- `VoxtralApi` swallows HTTP error codes — 401 vs 429 vs 503 all become `null`
+- `onStartCommand` unconditionally calls `startForeground` with IDLE notification — flashes notification state
+
+**Git:** Initial commit `0e6fa39` — "Initial MVP: working dictation app with Voxtral transcription"
+
+### Session 2 — 2026-02-23: Accessibility Service + Auto-inject
+
+**What was built:**
+1. `FlowVoiceAccessibilityService` — global double-tap volume down hotkey that works from any app (not just in-app)
+2. Auto-inject feature — transcribed text automatically pastes into any focused text field
+3. Bug fixes from post-MVP code review (error handling, AudioRecorder safety, VoxtralApi HTTP error codes)
+4. Unit tests for VoxtralApi
+5. README.md
+
+**Auto-inject flow:**
+```
+DictationService → copyToClipboard(text) → sendBroadcast(ACTION_INJECT_TEXT)
+  → FlowVoiceAccessibilityService receives broadcast
+  → rootInActiveWindow.findFocus(FOCUS_INPUT)
+  → if found: performAction(ACTION_PASTE)
+  → if not: no-op (text already on clipboard)
+```
+
+**Key details:**
+- Accessibility config needs `canRetrieveWindowContent="true"` and `flagRetrieveInteractiveWindows`
+- Broadcast is app-scoped (`setPackage(packageName)` + `RECEIVER_NOT_EXPORTED`)
+- Tested on Pixel 9 Pro — worked first try
+
+**Git:** `d3005ca` — "Add accessibility service with auto-inject into focused text fields"

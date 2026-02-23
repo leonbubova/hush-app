@@ -31,6 +31,10 @@ android {
         jvmTarget = "17"
     }
 
+    testOptions {
+        unitTests.isReturnDefaultValues = true
+    }
+
     buildFeatures {
         compose = true
         buildConfig = true
@@ -57,4 +61,8 @@ dependencies {
 
     // JSON parsing
     implementation("org.json:json:20231013")
+
+    // Testing
+    testImplementation("junit:junit:4.13.2")
+    testImplementation("com.squareup.okhttp3:mockwebserver:4.12.0")
 }

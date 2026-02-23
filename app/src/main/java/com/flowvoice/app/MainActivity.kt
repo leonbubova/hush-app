@@ -1,9 +1,11 @@
 package com.flowvoice.app
 
 import android.Manifest
+import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
+import android.provider.Settings
 import android.view.KeyEvent
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -55,9 +57,17 @@ class MainActivity : ComponentActivity() {
                     onSaveApiKey = { viewModel.saveApiKey(it) },
                     onShowApiKeyDialog = { viewModel.showApiKeyDialog() },
                     onDismissApiKeyDialog = { viewModel.dismissApiKeyDialog() },
+                    onEnableAccessibility = {
+                        startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS))
+                    },
                 )
             }
         }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        viewModel.refreshAccessibilityStatus()
     }
 
     override fun onKeyDown(keyCode: Int, event: KeyEvent?): Boolean {
@@ -97,6 +107,7 @@ fun FlowVoiceScreen(
     onSaveApiKey: (String) -> Unit,
     onShowApiKeyDialog: () -> Unit,
     onDismissApiKeyDialog: () -> Unit,
+    onEnableAccessibility: () -> Unit = {},
 ) {
     val isRecording = state.dictationState == DictationService.DictationState.RECORDING
     val isProcessing = state.dictationState == DictationService.DictationState.PROCESSING
@@ -169,12 +180,49 @@ fun FlowVoiceScreen(
                         DictationService.DictationState.RECORDING -> "Speak now — double-tap volume to stop"
                         DictationService.DictationState.PROCESSING -> "Sending to Voxtral..."
                         DictationService.DictationState.DONE -> "Text copied to clipboard"
-                        DictationService.DictationState.ERROR -> "Check API key and try again"
+                        DictationService.DictationState.ERROR -> state.errorMessage.ifBlank { "Something went wrong" }
                     },
                     fontSize = 14.sp,
                     color = Color.White.copy(alpha = 0.5f),
                     textAlign = TextAlign.Center,
                 )
+            }
+
+            // Accessibility setup banner
+            if (!state.accessibilityEnabled) {
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(16.dp),
+                    colors = CardDefaults.cardColors(
+                        containerColor = Color(0xFF2A2A4A)
+                    ),
+                    onClick = onEnableAccessibility,
+                ) {
+                    Row(
+                        modifier = Modifier.padding(16.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                "Enable background shortcut",
+                                fontSize = 14.sp,
+                                fontWeight = FontWeight.SemiBold,
+                                color = Color.White,
+                            )
+                            Spacer(Modifier.height(4.dp))
+                            Text(
+                                "Turn on accessibility to use volume double-tap from any app",
+                                fontSize = 12.sp,
+                                color = Color.White.copy(alpha = 0.5f),
+                            )
+                        }
+                        Text(
+                            "\u2192",
+                            fontSize = 20.sp,
+                            color = Color(0xFF6C63FF),
+                        )
+                    }
+                }
             }
 
             // Mic button
