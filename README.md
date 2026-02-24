@@ -224,3 +224,4 @@ $ADB -s emulator-5554 pull /sdcard/Pictures/hush-tests/ screenshots/
 - API keys are stored in Android EncryptedSharedPreferences (AES-256)
 - No credentials are included in the APK — each user provides their own Mistral API key
 - Release keystore and passwords are kept in `local.properties` (gitignored)
+- Full credential audit performed 2026-02-24: no API keys, passwords, or secrets in codebase or git history

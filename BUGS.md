@@ -1,4 +1,4 @@
-# FlowVoice — Known Bugs & Issues
+# Hush — Known Bugs & Issues
 
 ## Found during post-MVP iteration (2026-02-23)
 

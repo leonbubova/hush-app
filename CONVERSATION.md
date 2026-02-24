@@ -1,4 +1,4 @@
-# FlowVoice — Android AI Dictation App
+# Hush — Android AI Dictation App
 
 ## TL;DR
 
@@ -47,12 +47,12 @@ wispr-killer/
 │   ├── build.gradle.kts          # compileSdk 35, minSdk 26, Compose BOM, OkHttp
 │   └── src/main/
 │       ├── AndroidManifest.xml   # Permissions: INTERNET, RECORD_AUDIO, FOREGROUND_SERVICE, etc.
-│       ├── java/com/flowvoice/app/
-│       │   ├── FlowVoiceApp.kt       # Application class, notification channel setup
+│       ├── java/com/hush/app/
+│       │   ├── HushApp.kt       # Application class, notification channel setup
 │       │   ├── MainActivity.kt        # Compose UI, permissions
 │       │   ├── MainViewModel.kt       # UI state, service binding, API key management
 │       │   ├── DictationService.kt    # Foreground service, notification, recording, clipboard + broadcast
-│       │   ├── FlowVoiceAccessibilityService.kt  # Volume key hotkey + auto-inject
+│       │   ├── HushAccessibilityService.kt  # Volume key hotkey + auto-inject
 │       │   ├── AudioRecorder.kt       # MediaRecorder wrapper (m4a/AAC output)
 │       │   ├── VoxtralApi.kt          # OkHttp multipart POST to Mistral API
 │       │   └── ui/theme/Theme.kt      # Material 3 dark theme with dynamic colors
@@ -67,7 +67,7 @@ wispr-killer/
 
 ### Core Flow
 ```
-FlowVoiceAccessibilityService (global volume key listener)
+HushAccessibilityService (global volume key listener)
     → double-tap volume down → starts DictationService
 
 MainActivity (Compose UI)
@@ -79,7 +79,7 @@ DictationService (foreground service + notification)
     → sendBroadcast(ACTION_INJECT_TEXT)
     → NotificationManager (updates status)
 
-FlowVoiceAccessibilityService (receives broadcast)
+HushAccessibilityService (receives broadcast)
     → findFocus(FOCUS_INPUT) → performAction(ACTION_PASTE)
 ```
 
@@ -167,7 +167,7 @@ $ANDROID_HOME/platform-tools/adb logcat -s "VoxtralApi:*" "DictationService:*"
 ### Session 2 — 2026-02-23: Accessibility Service + Auto-inject
 
 **What was built:**
-1. `FlowVoiceAccessibilityService` — global double-tap volume down hotkey that works from any app (not just in-app)
+1. `HushAccessibilityService` — global double-tap volume down hotkey that works from any app (not just in-app)
 2. Auto-inject feature — transcribed text automatically pastes into any focused text field
 3. Bug fixes from post-MVP code review (error handling, AudioRecorder safety, VoxtralApi HTTP error codes)
 4. Unit tests for VoxtralApi
@@ -176,7 +176,7 @@ $ANDROID_HOME/platform-tools/adb logcat -s "VoxtralApi:*" "DictationService:*"
 **Auto-inject flow:**
 ```
 DictationService → copyToClipboard(text) → sendBroadcast(ACTION_INJECT_TEXT)
-  → FlowVoiceAccessibilityService receives broadcast
+  → HushAccessibilityService receives broadcast
   → rootInActiveWindow.findFocus(FOCUS_INPUT)
   → if found: performAction(ACTION_PASTE)
   → if not: no-op (text already on clipboard)

@@ -17,6 +17,10 @@ Thumbs.db
 # Secrets
 *.keystore
 *.jks
+.env
+.env.*
+*.secret
+credentials.json
 
 # Screenshot tests (baselines committed, latest are ephemeral)
 screenshots/*_latest.png
