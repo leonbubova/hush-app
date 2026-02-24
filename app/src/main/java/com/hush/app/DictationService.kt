@@ -1,4 +1,4 @@
-package com.flowvoice.app
+package com.hush.app
 
 import android.app.Notification
 import android.app.PendingIntent
@@ -18,7 +18,7 @@ import kotlinx.coroutines.*
 class DictationService : Service() {
 
     companion object {
-        const val ACTION_TOGGLE = "com.flowvoice.TOGGLE"
+        const val ACTION_TOGGLE = "com.hush.TOGGLE"
         const val NOTIF_ID = 1
     }
 
@@ -96,7 +96,7 @@ class DictationService : Service() {
                     when (result) {
                         is TranscribeResult.Success -> {
                             copyToClipboard(result.text)
-                            sendBroadcast(Intent(FlowVoiceAccessibilityService.ACTION_INJECT_TEXT).setPackage(packageName))
+                            sendBroadcast(Intent(HushAccessibilityService.ACTION_INJECT_TEXT).setPackage(packageName))
                             updateState(DictationState.DONE, result.text)
                         }
                         is TranscribeResult.Error -> {
@@ -121,7 +121,7 @@ class DictationService : Service() {
             .build()
         return EncryptedSharedPreferences.create(
             this,
-            "flowvoice_secure",
+            "hush_secure",
             masterKey,
             EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
             EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM,
@@ -164,7 +164,7 @@ class DictationService : Service() {
 
         val actionLabel = if (state == DictationState.RECORDING) "Stop" else "Record"
 
-        return NotificationCompat.Builder(this, FlowVoiceApp.CHANNEL_ID)
+        return NotificationCompat.Builder(this, HushApp.CHANNEL_ID)
             .setContentTitle(title)
             .setContentText(body)
             .setSmallIcon(icon)

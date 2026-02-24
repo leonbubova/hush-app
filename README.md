@@ -92,10 +92,10 @@ Android AI dictation app — speak anywhere, transcribe instantly. A native alte
 MainActivity          — Jetpack Compose UI, permissions, API key setup
 MainViewModel         — state management, service binding
 DictationService      — foreground service, recording orchestration, clipboard + broadcast
-FlowVoiceAccessibilityService — volume key interception, auto-inject via ACTION_PASTE
+HushAccessibilityService — volume key interception, auto-inject via ACTION_PASTE
 AudioRecorder         — MediaRecorder wrapper for WAV capture
 VoxtralApi            — Mistral Voxtral API client
-FlowVoiceApp          — Application class, notification channel setup
+HushApp               — Application class, notification channel setup
 ```
 
 ### Auto-inject flow
@@ -104,7 +104,7 @@ FlowVoiceApp          — Application class, notification channel setup
 DictationService.stopRecording()
   → copyToClipboard(text)
   → sendBroadcast(ACTION_INJECT_TEXT)
-  → FlowVoiceAccessibilityService receives broadcast
+  → HushAccessibilityService receives broadcast
   → findFocus(FOCUS_INPUT)
   → if found: performAction(ACTION_PASTE)
   → if not found: no-op (text already on clipboard)
@@ -160,6 +160,64 @@ adb install -r app/build/outputs/apk/release/app-release.apk
 - `FOREGROUND_SERVICE` / `FOREGROUND_SERVICE_MICROPHONE` — background recording
 - `POST_NOTIFICATIONS` — status notification
 - Accessibility Service — volume key detection + text field injection
+
+## Testing
+
+### E2E instrumented test
+
+The `DictationFlowE2ETest` reproduces a full fresh-install flow on an emulator:
+
+1. App launches (permissions pre-granted via `GrantPermissionRule`)
+2. Cancels the API key dialog
+3. Asserts "Ready" state
+4. Taps mic button, asserts "Listening..."
+5. Taps mic button again, asserts "Error" with missing API key message
+
+Each checkpoint captures a screenshot for visual regression.
+
+#### Prerequisites
+
+- AVD named `hush-test` (Pixel 7 profile, 1080x2400 @ 420dpi, API 34)
+- No prior install of `com.hush.app` on the emulator (for clean API key state)
+
+#### Environment setup
+
+All commands below assume these variables are set:
+
+```bash
+export JAVA_HOME=/opt/homebrew/opt/openjdk@17
+export ANDROID_HOME=/opt/homebrew/share/android-commandlinetools
+EMU=$ANDROID_HOME/emulator/emulator
+ADB=$ANDROID_HOME/platform-tools/adb
+```
+
+#### Starting the emulator (headless)
+
+```bash
+$EMU -avd hush-test -no-window -no-audio -no-snapshot-load -gpu host &
+$ADB wait-for-device shell 'while [ "$(getprop sys.boot_completed)" != "1" ]; do sleep 1; done'
+```
+
+#### Running the test
+
+```bash
+# Ensure clean state
+$ADB -s emulator-5554 uninstall com.hush.app || true
+
+# Run the test
+ANDROID_SERIAL=emulator-5554 ./gradlew :app:connectedDebugAndroidTest \
+  -Pandroid.testInstrumentationRunnerArguments.class=com.hush.app.DictationFlowE2ETest
+
+# Pull screenshots from device
+$ADB -s emulator-5554 pull /sdcard/Pictures/hush-tests/ screenshots/
+```
+
+#### Screenshot comparison
+
+- On first run, screenshots are saved as `<name>_baseline.png`
+- On subsequent runs, they are saved as `<name>_latest.png` (baselines are preserved)
+- Baseline files are committed to git; `*_latest.png` files are gitignored
+- Compare visually with any image diff tool
 
 ## Security
 

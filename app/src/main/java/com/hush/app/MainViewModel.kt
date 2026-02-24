@@ -1,4 +1,4 @@
-package com.flowvoice.app
+package com.hush.app
 
 import android.app.Application
 import android.content.ComponentName
@@ -78,7 +78,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             .build()
         return EncryptedSharedPreferences.create(
             context,
-            "flowvoice_secure",
+            "hush_secure",
             masterKey,
             EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
             EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM,
@@ -86,11 +86,36 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     private fun migratePrefsIfNeeded(context: Context, encryptedPrefs: SharedPreferences) {
+        // Migrate from legacy unencrypted prefs
         val oldPrefs = context.getSharedPreferences("flowvoice", Context.MODE_PRIVATE)
         val oldKey = oldPrefs.getString("voxtral_api_key", null)
         if (oldKey != null) {
             encryptedPrefs.edit().putString("voxtral_api_key", oldKey).apply()
             oldPrefs.edit().remove("voxtral_api_key").apply()
+        }
+
+        // Migrate from old encrypted prefs name
+        try {
+            val oldMasterKey = MasterKey.Builder(context)
+                .setKeyScheme(MasterKey.KeyScheme.AES256_GCM)
+                .build()
+            val oldEncryptedPrefs = EncryptedSharedPreferences.create(
+                context,
+                "flowvoice_secure",
+                oldMasterKey,
+                EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
+                EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM,
+            )
+            val oldEncKey = oldEncryptedPrefs.getString("voxtral_api_key", null)
+            if (oldEncKey != null && encryptedPrefs.getString("voxtral_api_key", null) == null) {
+                encryptedPrefs.edit().putString("voxtral_api_key", oldEncKey).apply()
+                val oldHistory = oldEncryptedPrefs.getString("history", null)
+                if (oldHistory != null) {
+                    encryptedPrefs.edit().putString("history", oldHistory).apply()
+                }
+            }
+        } catch (_: Exception) {
+            // Old prefs don't exist or can't be read — that's fine
         }
     }
 
@@ -168,7 +193,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     private fun isAccessibilityEnabled(): Boolean {
         val context = getApplication<Application>()
-        val serviceName = ComponentName(context, FlowVoiceAccessibilityService::class.java).flattenToString()
+        val serviceName = ComponentName(context, HushAccessibilityService::class.java).flattenToString()
         val enabledServices = Settings.Secure.getString(
             context.contentResolver,
             Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES

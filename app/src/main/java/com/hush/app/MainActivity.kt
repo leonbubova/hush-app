@@ -1,4 +1,4 @@
-package com.flowvoice.app
+package com.hush.app
 
 import android.Manifest
 import android.content.Intent
@@ -33,6 +33,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
@@ -41,7 +42,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.flowvoice.app.ui.theme.FlowVoiceTheme
+import com.hush.app.ui.theme.HushTheme
 import kotlin.math.cos
 import kotlin.math.sin
 
@@ -69,9 +70,9 @@ class MainActivity : ComponentActivity() {
         requestPermissions()
 
         setContent {
-            FlowVoiceTheme {
+            HushTheme {
                 val state by viewModel.state.collectAsStateWithLifecycle()
-                FlowVoiceScreen(
+                HushScreen(
                     state = state,
                     onToggle = { viewModel.toggle() },
                     onSaveApiKey = { viewModel.saveApiKey(it) },
@@ -130,7 +131,7 @@ class MainActivity : ComponentActivity() {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun FlowVoiceScreen(
+fun HushScreen(
     state: MainViewModel.UiState,
     onToggle: () -> Unit,
     onSaveApiKey: (String) -> Unit,
@@ -210,15 +211,16 @@ fun FlowVoiceScreen(
                     fontFamily = PlayfairDisplay,
                     fontWeight = FontWeight.Normal,
                     color = Color.White,
+                    modifier = Modifier.testTag("status_text"),
                 )
 
                 Spacer(Modifier.height(4.dp))
 
                 Text(
                     text = when (state.dictationState) {
-                        DictationService.DictationState.IDLE -> "Double-tap volume down or tap the mic"
+                        DictationService.DictationState.IDLE -> "Double-tap volume down or tap the circle"
                         DictationService.DictationState.RECORDING -> "Speak now — double-tap volume to stop"
-                        DictationService.DictationState.PROCESSING -> "Sending to Voxtral..."
+                        DictationService.DictationState.PROCESSING -> "Decoding your yapping..."
                         DictationService.DictationState.DONE -> "Text copied to clipboard"
                         DictationService.DictationState.ERROR -> state.errorMessage.ifBlank { "Something went wrong" }
                     },
@@ -226,6 +228,7 @@ fun FlowVoiceScreen(
                     fontFamily = PlayfairDisplay,
                     color = Color.White.copy(alpha = 0.55f),
                     textAlign = TextAlign.Center,
+                    modifier = Modifier.testTag("subtitle_text"),
                 )
             }
 
@@ -505,7 +508,8 @@ fun MicButton(
             .size(220.dp)
             .scale(scale)
             .clip(CircleShape)
-            .clickable(enabled = !isProcessing) { onClick() },
+            .clickable(enabled = !isProcessing) { onClick() }
+            .testTag("mic_button"),
         contentAlignment = Alignment.Center,
     ) {
         Canvas(modifier = Modifier.fillMaxSize()) {

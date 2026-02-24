@@ -1,4 +1,4 @@
-package com.flowvoice.app
+package com.hush.app
 
 import android.accessibilityservice.AccessibilityService
 import android.content.BroadcastReceiver
@@ -10,12 +10,12 @@ import android.view.KeyEvent
 import android.view.accessibility.AccessibilityEvent
 import android.view.accessibility.AccessibilityNodeInfo
 
-class FlowVoiceAccessibilityService : AccessibilityService() {
+class HushAccessibilityService : AccessibilityService() {
 
     companion object {
-        private const val TAG = "FlowVoiceA11y"
+        private const val TAG = "HushA11y"
         private const val DOUBLE_TAP_THRESHOLD_MS = 400L
-        const val ACTION_INJECT_TEXT = "com.flowvoice.ACTION_INJECT_TEXT"
+        const val ACTION_INJECT_TEXT = "com.hush.ACTION_INJECT_TEXT"
     }
 
     private var lastVolumeDownTime = 0L

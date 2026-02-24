@@ -1,4 +1,4 @@
-package com.flowvoice.app
+package com.hush.app
 
 import okhttp3.mockwebserver.MockResponse
 import okhttp3.mockwebserver.MockWebServer

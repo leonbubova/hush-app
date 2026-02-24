@@ -1,10 +1,10 @@
-package com.flowvoice.app
+package com.hush.app
 
 import android.app.Application
 import android.app.NotificationChannel
 import android.app.NotificationManager
 
-class FlowVoiceApp : Application() {
+class HushApp : Application() {
 
     companion object {
         const val CHANNEL_ID = "dictation_channel"

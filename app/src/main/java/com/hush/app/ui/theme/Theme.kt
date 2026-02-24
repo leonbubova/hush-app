@@ -1,4 +1,4 @@
-package com.flowvoice.app.ui.theme
+package com.hush.app.ui.theme
 
 import android.os.Build
 import androidx.compose.foundation.isSystemInDarkTheme
@@ -20,7 +20,7 @@ private val DarkColorScheme = darkColorScheme(
 )
 
 @Composable
-fun FlowVoiceTheme(content: @Composable () -> Unit) {
+fun HushTheme(content: @Composable () -> Unit) {
     val colorScheme = if (Build.VERSION.SDK_INT >= 31) {
         val context = LocalContext.current
         dynamicDarkColorScheme(context).copy(

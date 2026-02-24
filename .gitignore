@@ -17,3 +17,6 @@ Thumbs.db
 # Secrets
 *.keystore
 *.jks
+
+# Screenshot tests (baselines committed, latest are ephemeral)
+screenshots/*_latest.png

@@ -15,5 +15,5 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "FlowVoice"
+rootProject.name = "Hush"
 include(":app")
