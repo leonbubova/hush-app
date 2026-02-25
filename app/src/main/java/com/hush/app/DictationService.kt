@@ -31,6 +31,8 @@ class DictationService : Service() {
     private var audioRecorder: AudioRecorder? = null
     private var isRecording = false
     private var isForegroundStarted = false
+    private var recordingStartMs: Long = 0L
+    private var autoStopJob: Job? = null
 
     var onStateChanged: ((DictationState, String?) -> Unit)? = null
 
@@ -64,15 +66,26 @@ class DictationService : Service() {
         val started = audioRecorder?.start() ?: false
         if (started) {
             isRecording = true
+            recordingStartMs = System.currentTimeMillis()
             updateState(DictationState.RECORDING)
+            autoStopJob = scope.launch {
+                delay(60_000)
+                if (isRecording) {
+                    withContext(Dispatchers.Main) { stopRecording() }
+                }
+            }
         } else {
             updateState(DictationState.ERROR, "Microphone unavailable — check permissions")
         }
     }
 
     private fun stopRecording() {
+        autoStopJob?.cancel()
+        autoStopJob = null
+        val durationSeconds = ((System.currentTimeMillis() - recordingStartMs) / 1000).toInt()
         isRecording = false
         updateState(DictationState.PROCESSING)
+
         val file = audioRecorder?.stop() ?: run {
             updateState(DictationState.ERROR, "Recorder failed to save audio")
             return
@@ -95,6 +108,10 @@ class DictationService : Service() {
                 withContext(Dispatchers.Main) {
                     when (result) {
                         is TranscribeResult.Success -> {
+                            if (result.text.isNotBlank()) {
+                                val wordCount = result.text.trim().split("\\s+".toRegex()).size
+                                UsageRepository.recordSession(this@DictationService, recordingStartMs, durationSeconds, wordCount)
+                            }
                             copyToClipboard(result.text)
                             sendBroadcast(Intent(HushAccessibilityService.ACTION_INJECT_TEXT).setPackage(packageName))
                             updateState(DictationState.DONE, result.text)

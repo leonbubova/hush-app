@@ -11,6 +11,7 @@ Android AI dictation app — speak anywhere, transcribe instantly. A native alte
 - **Voxtral transcription** — powered by Mistral's Voxtral speech-to-text API
 - **Custom blob/ring UI** — dark theme with animated glowing blobs and minimal ring-based mic button
 - **Transcription history** — recent transcriptions stored locally with tap-to-copy
+- **Usage dashboard** — streak tracking, transcription stats, weekly activity charts, cost estimates
 
 ## Setup Guide / Einrichtung
 
@@ -96,6 +97,8 @@ HushAccessibilityService — volume key interception, auto-inject via ACTION_PAS
 AudioRecorder         — MediaRecorder wrapper for WAV capture
 VoxtralApi            — Mistral Voxtral API client
 HushApp               — Application class, notification channel setup
+UsageScreen           — Compose usage dashboard (streak, charts, heatmap, cost)
+UsageRepository       — session persistence (SharedPreferences + JSON)
 ```
 
 ### Auto-inject flow

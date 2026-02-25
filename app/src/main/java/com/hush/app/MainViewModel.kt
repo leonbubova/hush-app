@@ -18,6 +18,8 @@ import org.json.JSONArray
 
 class MainViewModel(application: Application) : AndroidViewModel(application) {
 
+    enum class AppScreen { HOME, USAGE }
+
     data class UiState(
         val dictationState: DictationService.DictationState = DictationService.DictationState.IDLE,
         val history: List<String> = emptyList(),
@@ -25,6 +27,8 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         val apiKey: String = "",
         val showApiKeyDialog: Boolean = false,
         val accessibilityEnabled: Boolean = false,
+        val currentScreen: AppScreen = AppScreen.HOME,
+        val usageSessions: List<RecordingSession> = emptyList(),
     )
 
     private val _state = MutableStateFlow(UiState())
@@ -49,6 +53,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                                 dictationState = dictationState,
                                 history = updated,
                                 errorMessage = "",
+                                usageSessions = UsageRepository.loadSessions(getApplication()),
                             )
                         } else {
                             _state.value.copy(dictationState = dictationState, errorMessage = "")
@@ -130,6 +135,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             history = loadHistory(),
             showApiKeyDialog = savedKey.isBlank(),
             accessibilityEnabled = isAccessibilityEnabled(),
+            usageSessions = UsageRepository.loadSessions(application),
         )
     }
 
@@ -200,6 +206,19 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         ) ?: return false
         return TextUtils.SimpleStringSplitter(':').apply { setString(enabledServices) }
             .any { it.equals(serviceName, ignoreCase = true) }
+    }
+
+    fun navigateTo(screen: AppScreen) {
+        _state.value = _state.value.copy(
+            currentScreen = screen,
+            usageSessions = if (screen == AppScreen.USAGE)
+                UsageRepository.loadSessions(getApplication()) else _state.value.usageSessions,
+        )
+    }
+
+    fun clearUsageData() {
+        UsageRepository.clearSessions(getApplication())
+        _state.value = _state.value.copy(usageSessions = emptyList())
     }
 
     override fun onCleared() {

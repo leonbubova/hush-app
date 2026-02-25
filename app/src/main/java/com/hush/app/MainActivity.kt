@@ -8,6 +8,7 @@ import android.os.Bundle
 import android.provider.Settings
 import android.view.KeyEvent
 import androidx.activity.ComponentActivity
+import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
@@ -43,6 +44,7 @@ import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.hush.app.ui.theme.HushTheme
+import kotlinx.coroutines.launch
 import kotlin.math.cos
 import kotlin.math.sin
 
@@ -72,22 +74,57 @@ class MainActivity : ComponentActivity() {
         setContent {
             HushTheme {
                 val state by viewModel.state.collectAsStateWithLifecycle()
-                HushScreen(
-                    state = state,
-                    onToggle = { viewModel.toggle() },
-                    onSaveApiKey = { viewModel.saveApiKey(it) },
-                    onShowApiKeyDialog = { viewModel.showApiKeyDialog() },
-                    onDismissApiKeyDialog = { viewModel.dismissApiKeyDialog() },
-                    onClearHistory = { viewModel.clearHistory() },
-                    onCopyText = { text ->
-                        val clipboard = getSystemService(CLIPBOARD_SERVICE) as android.content.ClipboardManager
-                        clipboard.setPrimaryClip(android.content.ClipData.newPlainText("Transcription", text))
-                        android.widget.Toast.makeText(this, "Copied", android.widget.Toast.LENGTH_SHORT).show()
+                val drawerState = rememberDrawerState(DrawerValue.Closed)
+                val scope = rememberCoroutineScope()
+
+                BackHandler(enabled = state.currentScreen != MainViewModel.AppScreen.HOME) {
+                    viewModel.navigateTo(MainViewModel.AppScreen.HOME)
+                }
+                BackHandler(enabled = drawerState.isOpen) {
+                    scope.launch { drawerState.close() }
+                }
+
+                ModalNavigationDrawer(
+                    drawerState = drawerState,
+                    drawerContent = {
+                        HushDrawerContent(
+                            currentScreen = state.currentScreen,
+                            onNavigate = { screen ->
+                                viewModel.navigateTo(screen)
+                                scope.launch { drawerState.close() }
+                            },
+                            onShowSettings = {
+                                viewModel.showApiKeyDialog()
+                                scope.launch { drawerState.close() }
+                            },
+                        )
                     },
-                    onEnableAccessibility = {
-                        startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS))
-                    },
-                )
+                ) {
+                    when (state.currentScreen) {
+                        MainViewModel.AppScreen.HOME -> HushScreen(
+                            state = state,
+                            onToggle = { viewModel.toggle() },
+                            onSaveApiKey = { viewModel.saveApiKey(it) },
+                            onShowApiKeyDialog = { viewModel.showApiKeyDialog() },
+                            onDismissApiKeyDialog = { viewModel.dismissApiKeyDialog() },
+                            onClearHistory = { viewModel.clearHistory() },
+                            onCopyText = { text ->
+                                val clipboard = getSystemService(CLIPBOARD_SERVICE) as android.content.ClipboardManager
+                                clipboard.setPrimaryClip(android.content.ClipData.newPlainText("Transcription", text))
+                                android.widget.Toast.makeText(this, "Copied", android.widget.Toast.LENGTH_SHORT).show()
+                            },
+                            onEnableAccessibility = {
+                                startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS))
+                            },
+                            onOpenDrawer = { scope.launch { drawerState.open() } },
+                        )
+                        MainViewModel.AppScreen.USAGE -> HushUsageScaffold(
+                            sessions = state.usageSessions,
+                            onOpenDrawer = { scope.launch { drawerState.open() } },
+                            onBack = { viewModel.navigateTo(MainViewModel.AppScreen.HOME) },
+                        )
+                    }
+                }
             }
         }
     }
@@ -140,6 +177,7 @@ fun HushScreen(
     onClearHistory: () -> Unit,
     onCopyText: (String) -> Unit = {},
     onEnableAccessibility: () -> Unit = {},
+    onOpenDrawer: () -> Unit = {},
 ) {
     val isRecording = state.dictationState == DictationService.DictationState.RECORDING
     val isProcessing = state.dictationState == DictationService.DictationState.PROCESSING
@@ -157,6 +195,11 @@ fun HushScreen(
         containerColor = bgColor,
         topBar = {
             TopAppBar(
+                navigationIcon = {
+                    IconButton(onClick = onOpenDrawer) {
+                        Text("\u2630", fontSize = 20.sp, color = Color.White.copy(alpha = 0.7f))
+                    }
+                },
                 title = {
                     Text(
                         "Hush",
@@ -164,11 +207,6 @@ fun HushScreen(
                         fontWeight = FontWeight.Bold,
                         color = Color.White,
                     )
-                },
-                actions = {
-                    IconButton(onClick = onShowApiKeyDialog) {
-                        Text("\u2699", fontSize = 20.sp, color = Color.White.copy(alpha = 0.7f))
-                    }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent)
             )
@@ -633,4 +671,101 @@ fun ApiKeyDialog(
             }
         },
     )
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun HushUsageScaffold(
+    sessions: List<RecordingSession>,
+    onOpenDrawer: () -> Unit,
+    onBack: () -> Unit,
+) {
+    Scaffold(
+        containerColor = Color(0xFF0D0D1A),
+        topBar = {
+            TopAppBar(
+                navigationIcon = {
+                    IconButton(onClick = onOpenDrawer) {
+                        Text("\u2630", fontSize = 20.sp, color = Color.White.copy(alpha = 0.7f))
+                    }
+                },
+                title = {
+                    Text(
+                        "Usage",
+                        fontFamily = PlayfairDisplay,
+                        fontWeight = FontWeight.Bold,
+                        color = Color.White,
+                    )
+                },
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent),
+            )
+        }
+    ) { padding ->
+        Box(modifier = Modifier.padding(padding)) {
+            UsageScreen(sessions = sessions)
+        }
+    }
+}
+
+@Composable
+fun HushDrawerContent(
+    currentScreen: MainViewModel.AppScreen,
+    onNavigate: (MainViewModel.AppScreen) -> Unit,
+    onShowSettings: () -> Unit,
+) {
+    ModalDrawerSheet(
+        drawerContainerColor = Color(0xFF1A1A2E),
+    ) {
+        Spacer(Modifier.height(32.dp))
+        Text(
+            "Hush",
+            fontSize = 28.sp,
+            fontFamily = PlayfairDisplay,
+            fontWeight = FontWeight.Bold,
+            color = Color.White,
+            modifier = Modifier.padding(horizontal = 24.dp, vertical = 16.dp),
+        )
+        Spacer(Modifier.height(8.dp))
+        DrawerItem(
+            label = "Home",
+            selected = currentScreen == MainViewModel.AppScreen.HOME,
+            onClick = { onNavigate(MainViewModel.AppScreen.HOME) },
+        )
+        DrawerItem(
+            label = "Usage",
+            selected = currentScreen == MainViewModel.AppScreen.USAGE,
+            onClick = { onNavigate(MainViewModel.AppScreen.USAGE) },
+        )
+        DrawerItem(
+            label = "Settings",
+            selected = false,
+            onClick = onShowSettings,
+        )
+    }
+}
+
+@Composable
+private fun DrawerItem(
+    label: String,
+    selected: Boolean,
+    onClick: () -> Unit,
+) {
+    val bgColor = if (selected) Color.White.copy(alpha = 0.08f) else Color.Transparent
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 12.dp, vertical = 2.dp)
+            .clip(RoundedCornerShape(12.dp))
+            .background(bgColor)
+            .clickable(onClick = onClick)
+            .padding(horizontal = 16.dp, vertical = 14.dp),
+    ) {
+        Text(
+            label,
+            fontSize = 16.sp,
+            fontFamily = PlayfairDisplay,
+            fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal,
+            color = if (selected) Color.White else Color.White.copy(alpha = 0.6f),
+        )
+    }
 }
