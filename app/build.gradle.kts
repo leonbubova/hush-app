@@ -104,7 +104,7 @@ dependencies {
     implementation("com.squareup.okhttp3:okhttp:4.12.0")
 
     // ExecuTorch for on-device ML inference
-    implementation("org.pytorch:executorch-android:0.6.0")
+    implementation("org.pytorch:executorch-android:1.1.0")
     implementation("com.facebook.soloader:soloader:0.10.5")
     implementation("com.facebook.fbjni:fbjni:0.7.0")
 
