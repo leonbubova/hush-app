@@ -8,6 +8,10 @@ import java.io.File
 
 class AudioRecorder(private val context: Context) {
 
+    companion object {
+        private const val TAG = "AudioRecorder"
+    }
+
     private var recorder: MediaRecorder? = null
     private var outputFile: File? = null
 
@@ -33,7 +37,7 @@ class AudioRecorder(private val context: Context) {
             }
             true
         } catch (e: Exception) {
-            Log.e("AudioRecorder", "Failed to start recording", e)
+            Log.e(TAG, "Failed to start recording", e)
             recorder?.release()
             recorder = null
             false

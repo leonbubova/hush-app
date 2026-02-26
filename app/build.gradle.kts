@@ -5,6 +5,8 @@ plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
     id("org.jetbrains.kotlin.plugin.compose")
+    id("com.google.gms.google-services") apply false
+    id("com.google.firebase.crashlytics") apply false
 }
 
 android {
@@ -103,6 +105,10 @@ dependencies {
     // OkHttp for API calls
     implementation("com.squareup.okhttp3:okhttp:4.12.0")
 
+    // Firebase
+    implementation(platform("com.google.firebase:firebase-bom:33.8.0"))
+    implementation("com.google.firebase:firebase-crashlytics")
+
     // ExecuTorch for on-device ML inference
     implementation("org.pytorch:executorch-android:1.1.0")
     implementation("com.facebook.soloader:soloader:0.10.5")
@@ -125,4 +131,10 @@ dependencies {
     androidTestImplementation("androidx.test:runner:1.6.2")
     androidTestImplementation("androidx.test:rules:1.6.1")
     androidTestImplementation("androidx.test.uiautomator:uiautomator:2.3.0")
+}
+
+// Apply Firebase plugins only when google-services.json is present
+if (file("google-services.json").exists()) {
+    apply(plugin = "com.google.gms.google-services")
+    apply(plugin = "com.google.firebase.crashlytics")
 }

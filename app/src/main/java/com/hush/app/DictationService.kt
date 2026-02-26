@@ -17,6 +17,7 @@ import kotlinx.coroutines.*
 class DictationService : Service() {
 
     companion object {
+        private const val TAG = "DictationService"
         const val ACTION_TOGGLE = "com.hush.TOGGLE"
         const val NOTIF_ID = 1
     }
@@ -93,9 +94,9 @@ class DictationService : Service() {
         scope.launch {
             try {
                 val provider = ProviderFactory.resolve(this@DictationService)
-                Log.i("DictationService", "Sending file to ${provider.displayName}: ${file.length()} bytes")
+                Log.i(TAG, "Sending file to ${provider.displayName}: ${file.length()} bytes")
                 val result = provider.transcribe(file)
-                Log.i("DictationService", "Transcription result: $result")
+                Log.i(TAG, "Transcription result: $result")
                 withContext(Dispatchers.Main) {
                     when (result) {
                         is TranscribeResult.Success -> {
@@ -113,7 +114,7 @@ class DictationService : Service() {
                     }
                 }
             } catch (e: Exception) {
-                Log.e("DictationService", "Error during transcription", e)
+                Log.e(TAG, "Error during transcription", e)
                 withContext(Dispatchers.Main) {
                     updateState(DictationState.ERROR, "Unexpected error: ${e.message}")
                 }
