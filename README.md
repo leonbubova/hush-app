@@ -8,7 +8,8 @@ Android AI dictation app — speak anywhere, transcribe instantly. A native alte
 - **Auto-inject into text fields** — if a text field is focused, transcribed text is pasted directly at the cursor
 - **Clipboard fallback** — text is always copied to clipboard, even when auto-inject is active
 - **Background service** — persistent foreground notification with quick-action controls
-- **Multi-provider transcription** — choose between Voxtral (Mistral), OpenAI Whisper, or Groq
+- **Multi-provider transcription** — choose between Voxtral (Mistral), OpenAI Whisper, Groq, or Local (on-device)
+- **Local on-device transcription** — Whisper tiny.en via ExecuTorch, no internet required
 - **Settings screen** — switch providers, configure API keys and models per provider
 - **Custom blob/ring UI** — dark theme with animated glowing blobs and minimal ring-based mic button
 - **Transcription history** — recent transcriptions stored locally with tap-to-copy
@@ -110,6 +111,9 @@ transcription/
   VoxtralProvider       — Mistral Voxtral API client
   OpenAiWhisperProvider — OpenAI Whisper API client
   GroqProvider          — Groq API client (OpenAI-compatible)
+  LocalProvider         — on-device inference via ExecuTorch
+  AudioConverter        — M4A/AAC → 16kHz mono float PCM conversion
+  ModelManager          — model download, storage, and lifecycle management
 ```
 
 ### Auto-inject flow
@@ -129,7 +133,8 @@ DictationService.stopRecording()
 
 - Kotlin + Jetpack Compose
 - Android AccessibilityService for global hotkey + text injection
-- Multi-provider transcription: Voxtral (Mistral), OpenAI Whisper, Groq
+- Multi-provider transcription: Voxtral (Mistral), OpenAI Whisper, Groq, Local (on-device)
+- ExecuTorch for on-device ML inference (Whisper tiny.en)
 - OkHttp for API calls
 - EncryptedSharedPreferences for secure credential storage
 - Coroutines for async transcription
@@ -144,16 +149,26 @@ DictationService.stopRecording()
 Requires JDK 17 and Android SDK (no Android Studio needed):
 
 ```bash
-# Debug build
+# Debug build (com.hush.app.debug — "Hush Dev")
 JAVA_HOME=/opt/homebrew/opt/openjdk@17 \
 ANDROID_HOME=/opt/homebrew/share/android-commandlinetools \
 ./gradlew assembleDebug
 
-# Release build (requires signing config in local.properties)
+# Release build (com.hush.app — "Hush", requires signing config)
 JAVA_HOME=/opt/homebrew/opt/openjdk@17 \
 ANDROID_HOME=/opt/homebrew/share/android-commandlinetools \
 ./gradlew assembleRelease
 ```
+
+### Debug vs Release builds
+
+Debug builds use a separate application ID (`com.hush.app.debug`) and app name ("Hush Dev"), so they can be installed side-by-side with the release build on the same device. This prevents a broken dev build from replacing the stable production app.
+
+| | Debug | Release |
+|---|---|---|
+| Package | `com.hush.app.debug` | `com.hush.app` |
+| App name | Hush Dev | Hush |
+| Signing | debug keystore | release keystore |
 
 For release builds, add to `local.properties` (not committed to git):
 
@@ -167,6 +182,10 @@ RELEASE_KEY_PASSWORD=your-password
 Install on device:
 
 ```bash
+# Debug (installs alongside release)
+adb install -r app/build/outputs/apk/debug/app-debug.apk
+
+# Release
 adb install -r app/build/outputs/apk/release/app-release.apk
 ```
 
@@ -178,9 +197,35 @@ adb install -r app/build/outputs/apk/release/app-release.apk
 - `POST_NOTIFICATIONS` — status notification
 - Accessibility Service — volume key detection + text field injection
 
+## Local (On-Device) Transcription
+
+Hush supports local on-device transcription using ExecuTorch with Whisper models. No internet or API keys required.
+
+### Supported models
+
+| Model | Size | Latency (30s audio, flagship) | Quality |
+|---|---|---|---|
+| Whisper tiny.en | ~77 MB | ~1-2s | ~3-5% WER on clean speech |
+
+### Exporting the Whisper model
+
+```bash
+git clone https://github.com/pytorch/executorch.git && cd executorch
+pip install -e ".[all]"
+python -m executorch.examples.models.whisper.export --model tiny.en --output whisper_tiny_en.pte
+```
+
+This produces a `whisper_tiny_en.pte` file (~77 MB). Host it at a URL and configure the download URL in `ModelManager.kt`.
+
+### Using local transcription
+
+1. Open Settings → select "Local (On-Device)"
+2. Download the Whisper model (one-time, ~77 MB)
+3. Start dictating — works fully offline
+
 ## Testing
 
-### Unit tests (64 tests, no device needed)
+### Unit tests (no device needed)
 
 ```bash
 ./gradlew testDebugUnitTest
@@ -192,7 +237,10 @@ adb install -r app/build/outputs/apk/release/app-release.apk
 | `OpenAiWhisperProviderTest` | 11 | Same + language param handling |
 | `GroqProviderTest` | 11 | HTTP responses, auth, multipart |
 | `ProviderConfigTest` | 14 | JSON round-trip, defaults, edge cases |
-| `ProviderFactoryTest` | 8 | Provider resolution, display names, fallback |
+| `ProviderFactoryTest` | 9 | Provider resolution, display names, fallback, local provider |
+| `AudioConverterTest` | 10 | Resampling math, stereo→mono, Int16→Float32, normalization |
+| `LocalProviderTest` | 6 | Model not downloaded errors, metadata, requiresNetwork=false |
+| `ModelManagerTest` | 10 | Model status, file paths, download/delete, available models |
 | `UsageRepositoryTest` | 8 | Record/load/clear, MAX_SESSIONS cap, malformed JSON |
 
 ### E2E instrumented tests (emulator needed)
@@ -205,6 +253,14 @@ Fresh-install UI flow with screenshot capture:
 2. Asserts "Ready" state
 3. Taps mic button, asserts "Listening..."
 4. Taps mic button again, asserts "Error" with missing API key message
+
+#### AudioConverterInstrumentedTest
+
+Decodes `test_audio.m4a` using real MediaExtractor/MediaCodec on device:
+
+- Output is 16kHz mono (sample count matches expected duration)
+- All values in normalized range [-1.0, 1.0]
+- Output is non-silent (has variance)
 
 #### TranscriptionE2ETest
 
@@ -223,7 +279,7 @@ TEST_GROQ_KEY=your-key
 #### Prerequisites
 
 - AVD named `hush-test` (Pixel 7 profile, 1080x2400 @ 420dpi, API 34)
-- No prior install of `com.hush.app` on the emulator (for DictationFlowE2ETest)
+- No prior install of `com.hush.app.debug` on the emulator (for DictationFlowE2ETest)
 
 #### Environment setup
 
@@ -242,7 +298,7 @@ $EMU -avd hush-test -no-window -no-audio -no-snapshot-load -gpu host &
 $ADB wait-for-device shell 'while [ "$(getprop sys.boot_completed)" != "1" ]; do sleep 1; done'
 
 # Clean state for DictationFlowE2ETest
-$ADB -s emulator-5554 uninstall com.hush.app || true
+$ADB -s emulator-5554 uninstall com.hush.app.debug || true
 
 # Run all instrumented tests
 ANDROID_SERIAL=emulator-5554 ./gradlew :app:connectedDebugAndroidTest
@@ -250,6 +306,17 @@ ANDROID_SERIAL=emulator-5554 ./gradlew :app:connectedDebugAndroidTest
 # Pull screenshots
 $ADB -s emulator-5554 pull /sdcard/Pictures/hush-tests/ screenshots/
 ```
+
+## Claude Code Emulator Session
+
+For AI-assisted development, the project includes a prompt for running a dedicated emulator/build session alongside a sandboxed code-editing session. See [`docs/emulator-session-prompt.md`](docs/emulator-session-prompt.md) for the full setup.
+
+The emulator session handles:
+- Building and deploying the debug APK
+- Taking screenshots of all screens after each rebuild
+- Running UI automation (uiautomator dump + tap)
+- Hot reload loop watching `app/src/` for changes
+- Communication with the frontend session via `.claude/build-request.md` / `.claude/build-result.md`
 
 ## Security
 
