@@ -195,7 +195,10 @@ fun HushScreen(
         topBar = {
             TopAppBar(
                 navigationIcon = {
-                    IconButton(onClick = onOpenDrawer) {
+                    IconButton(
+                        onClick = onOpenDrawer,
+                        modifier = Modifier.testTag(TestTags.DRAWER_MENU_BUTTON),
+                    ) {
                         Text("\u2630", fontSize = 20.sp, color = Color.White.copy(alpha = 0.7f))
                     }
                 },
@@ -248,7 +251,7 @@ fun HushScreen(
                     fontFamily = PlayfairDisplay,
                     fontWeight = FontWeight.Normal,
                     color = Color.White,
-                    modifier = Modifier.testTag("status_text"),
+                    modifier = Modifier.testTag(TestTags.STATUS_TEXT),
                 )
 
                 Spacer(Modifier.height(4.dp))
@@ -265,7 +268,7 @@ fun HushScreen(
                     fontFamily = PlayfairDisplay,
                     color = Color.White.copy(alpha = 0.55f),
                     textAlign = TextAlign.Center,
-                    modifier = Modifier.testTag("subtitle_text"),
+                    modifier = Modifier.testTag(TestTags.SUBTITLE_TEXT),
                 )
             }
 
@@ -291,7 +294,9 @@ fun HushScreen(
             // Accessibility setup banner
             if (!state.accessibilityEnabled) {
                 Card(
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .testTag(TestTags.ACCESSIBILITY_BANNER),
                     shape = RoundedCornerShape(16.dp),
                     colors = CardDefaults.cardColors(
                         containerColor = Color(0xFF2A2A4A)
@@ -340,7 +345,10 @@ fun HushScreen(
                         fontWeight = FontWeight.Bold,
                         color = Color.White,
                     )
-                    TextButton(onClick = onClearHistory) {
+                    TextButton(
+                        onClick = onClearHistory,
+                        modifier = Modifier.testTag(TestTags.HISTORY_CLEAR_BUTTON),
+                    ) {
                         Text(
                             "Clear",
                             fontSize = 13.sp,
@@ -356,7 +364,10 @@ fun HushScreen(
                 ) {
                     itemsIndexed(state.history) { index, text ->
                         Card(
-                            modifier = Modifier.fillMaxWidth().clickable { onCopyText(text) },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .testTag(TestTags.historyItem(index))
+                                .clickable { onCopyText(text) },
                             shape = RoundedCornerShape(12.dp),
                             colors = CardDefaults.cardColors(
                                 containerColor = Color.White.copy(alpha = 0.12f)
@@ -377,7 +388,9 @@ fun HushScreen(
                     "Your transcriptions will appear here",
                     fontSize = 14.sp,
                     color = Color.White.copy(alpha = 0.3f),
-                    modifier = Modifier.padding(vertical = 32.dp),
+                    modifier = Modifier
+                        .padding(vertical = 32.dp)
+                        .testTag(TestTags.EMPTY_HISTORY_TEXT),
                 )
             }
             } // end Column
@@ -538,7 +551,7 @@ fun MicButton(
             .scale(scale)
             .clip(CircleShape)
             .clickable(enabled = !isProcessing) { onClick() }
-            .testTag("mic_button"),
+            .testTag(TestTags.MIC_BUTTON),
         contentAlignment = Alignment.Center,
     ) {
         Canvas(modifier = Modifier.fillMaxSize()) {
@@ -633,16 +646,19 @@ fun HushDrawerContent(
             label = "Home",
             selected = currentScreen == MainViewModel.AppScreen.HOME,
             onClick = { onNavigate(MainViewModel.AppScreen.HOME) },
+            testTag = TestTags.DRAWER_HOME,
         )
         DrawerItem(
             label = "Usage",
             selected = currentScreen == MainViewModel.AppScreen.USAGE,
             onClick = { onNavigate(MainViewModel.AppScreen.USAGE) },
+            testTag = TestTags.DRAWER_USAGE,
         )
         DrawerItem(
             label = "Settings",
             selected = currentScreen == MainViewModel.AppScreen.SETTINGS,
             onClick = { onNavigate(MainViewModel.AppScreen.SETTINGS) },
+            testTag = TestTags.DRAWER_SETTINGS,
         )
     }
 }
@@ -652,6 +668,7 @@ private fun DrawerItem(
     label: String,
     selected: Boolean,
     onClick: () -> Unit,
+    testTag: String = "",
 ) {
     val bgColor = if (selected) Color.White.copy(alpha = 0.08f) else Color.Transparent
     Box(
@@ -661,6 +678,7 @@ private fun DrawerItem(
             .clip(RoundedCornerShape(12.dp))
             .background(bgColor)
             .clickable(onClick = onClick)
+            .then(if (testTag.isNotEmpty()) Modifier.testTag(testTag) else Modifier)
             .padding(horizontal = 16.dp, vertical = 14.dp),
     ) {
         Text(

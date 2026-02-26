@@ -101,6 +101,7 @@ SettingsScreen        — provider selection and per-provider configuration UI
 HushApp               — Application class, notification channel setup
 UsageScreen           — Compose usage dashboard (streak, charts, heatmap, cost)
 UsageRepository       — session persistence (SharedPreferences + JSON)
+TestTags              — central registry of Compose testTag constants
 
 transcription/
   TranscriptionProvider — interface for all transcription backends
@@ -240,25 +241,26 @@ See [`notes/PLAN-model-export.md`](notes/PLAN-model-export.md) for the full expo
 | `UsageRepositoryTest` | 8 | Record/load/clear, MAX_SESSIONS cap, malformed JSON |
 | `MelSpectrogramTest` | 12 | Output shape, Hann window, mel filterbank, sine wave energy, log scaling |
 | `WhisperTokenizerTest` | 12 | BPE decoding, EOS/special token filtering, vocab loading, known phrases |
+| `MainViewModelTest` | 22 | Init state, navigation, provider management, history, usage, service toggle |
+| `ProviderRepositoryTest` | 10 | Active provider, config roundtrip, migration, malformed JSON, all configs |
 
-### E2E instrumented tests (emulator needed)
+### Instrumented tests (emulator needed)
 
-#### DictationFlowE2ETest
+```bash
+ANDROID_SERIAL=emulator-5554 ./gradlew :app:connectedDebugAndroidTest
+```
 
-Fresh-install UI flow with screenshot capture:
+| Suite | Tests | Coverage |
+|---|---|---|
+| `HomeScreenStateTest` | 10 | All 5 dictation states, history items, empty history, accessibility banner, mic button |
+| `NavigationTest` | 8 | Drawer open/close, navigate to Settings/Usage/Home via drawer |
+| `SettingsScreenTest` | 6 | Provider options, default selection, Local model UI, API key field, save button |
+| `DictationFlowE2ETest` | 5 | Fresh-install record→error flow, empty history, mic button, drawer button, accessibility |
+| `SettingsFlowE2ETest` | 4 | Switch providers, Local shows download, persist selection across navigation |
+| `AudioConverterInstrumentedTest` | 3 | M4A decode to 16kHz mono PCM, normalized range, non-silent output |
+| `TranscriptionE2ETest` | 6 | Real audio-to-API transcription (skipped if API key not set) |
 
-1. App launches (permissions pre-granted via `GrantPermissionRule`)
-2. Asserts "Ready" state
-3. Taps mic button, asserts "Listening..."
-4. Taps mic button again, asserts "Error" with missing API key message
-
-#### AudioConverterInstrumentedTest
-
-Decodes `test_audio.m4a` using real MediaExtractor/MediaCodec on device:
-
-- Output is 16kHz mono (sample count matches expected duration)
-- All values in normalized range [-1.0, 1.0]
-- Output is non-silent (has variance)
+All UI tests use Compose `testTag` semantics via `TestTags.kt` — no coordinate tapping or UIAutomator XML dumps.
 
 #### TranscriptionE2ETest
 

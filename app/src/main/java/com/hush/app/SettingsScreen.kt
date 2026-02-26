@@ -12,6 +12,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
@@ -64,7 +65,8 @@ fun SettingsScreen(
                 .padding(padding)
                 .fillMaxSize()
                 .verticalScroll(rememberScrollState())
-                .padding(horizontal = 20.dp),
+                .padding(horizontal = 20.dp)
+                .testTag(TestTags.SETTINGS_SCREEN),
         ) {
             Spacer(Modifier.height(8.dp))
 
@@ -122,6 +124,7 @@ private fun ProviderSelector(
                     .clip(RoundedCornerShape(12.dp))
                     .background(bgColor)
                     .clickable { onSelect(id) }
+                    .testTag(TestTags.providerOption(id))
                     .padding(horizontal = 16.dp, vertical = 14.dp),
             ) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
@@ -355,6 +358,7 @@ private fun LocalConfigPanel(
                                 shape = RoundedCornerShape(8.dp),
                                 colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF6C63FF)),
                                 contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
+                                modifier = Modifier.testTag(TestTags.MODEL_DOWNLOAD_BUTTON),
                             ) {
                                 Text("Download", fontSize = 13.sp)
                             }
@@ -369,7 +373,10 @@ private fun LocalConfigPanel(
                             )
                         }
                         ModelStatus.READY -> {
-                            TextButton(onClick = { onDeleteModel(model) }) {
+                            TextButton(
+                                onClick = { onDeleteModel(model) },
+                                modifier = Modifier.testTag(TestTags.MODEL_DELETE_BUTTON),
+                            ) {
                                 Text("Delete", color = Color(0xFFEF5350), fontSize = 13.sp)
                             }
                         }
@@ -484,7 +491,9 @@ private fun ApiKeyField(
             },
             label = { Text(label) },
             singleLine = true,
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier
+                .fillMaxWidth()
+                .testTag(TestTags.API_KEY_FIELD),
             colors = settingsTextFieldColors(),
         )
     }
@@ -540,7 +549,9 @@ private fun SaveButton(
     Button(
         onClick = onClick,
         enabled = enabled,
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier
+            .fillMaxWidth()
+            .testTag(TestTags.SAVE_BUTTON),
         shape = RoundedCornerShape(12.dp),
         colors = ButtonDefaults.buttonColors(
             containerColor = Color(0xFF6C63FF),

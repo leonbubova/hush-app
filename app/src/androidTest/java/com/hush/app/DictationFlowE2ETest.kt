@@ -6,9 +6,7 @@ import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import androidx.test.rule.GrantPermissionRule
-import androidx.test.uiautomator.By
 import androidx.test.uiautomator.UiDevice
-import androidx.test.uiautomator.Until
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -34,38 +32,71 @@ class DictationFlowE2ETest {
     fun freshInstall_noApiKey_recordAndStop_showsError() {
         // Permissions are pre-granted by GrantPermissionRule.
         // With no API key configured, app launches straight to "Ready".
-        dismissAnrIfPresent()
+        ComposeTestHelpers.dismissAnrIfPresent()
         composeRule.waitForIdle()
         Thread.sleep(500)
 
         // Assert "Ready" state and take screenshot
-        dismissAnrIfPresent()
-        composeRule.onNodeWithTag("status_text").assertTextEquals("Ready")
+        ComposeTestHelpers.dismissAnrIfPresent()
+        composeRule.onNodeWithTag(TestTags.STATUS_TEXT).assertTextEquals("Ready")
         takeScreenshot("ready")
 
         // Tap mic button, assert "Listening..."
-        composeRule.onNodeWithTag("mic_button").performClick()
+        composeRule.onNodeWithTag(TestTags.MIC_BUTTON).performClick()
         composeRule.waitForIdle()
         Thread.sleep(500)
-        dismissAnrIfPresent()
-        composeRule.onNodeWithTag("status_text").assertTextEquals("Listening...")
+        ComposeTestHelpers.dismissAnrIfPresent()
+        composeRule.onNodeWithTag(TestTags.STATUS_TEXT).assertTextEquals("Listening...")
         takeScreenshot("listening")
 
         // Tap mic button again, assert "Error" with "No API key configured"
-        composeRule.onNodeWithTag("mic_button").performClick()
+        composeRule.onNodeWithTag(TestTags.MIC_BUTTON).performClick()
         composeRule.waitForIdle()
         Thread.sleep(2000)
-        dismissAnrIfPresent()
-        composeRule.onNodeWithTag("status_text").assertTextEquals("Error")
-        composeRule.onNodeWithTag("subtitle_text").assertTextContains("API key", substring = true)
+        ComposeTestHelpers.dismissAnrIfPresent()
+        composeRule.onNodeWithTag(TestTags.STATUS_TEXT).assertTextEquals("Error")
+        composeRule.onNodeWithTag(TestTags.SUBTITLE_TEXT).assertTextContains("API key", substring = true)
         takeScreenshot("error")
     }
 
-    private fun dismissAnrIfPresent() {
-        // Dismiss "System UI isn't responding" or similar ANR dialogs
-        val wait = device.wait(Until.findObject(By.text("Wait")), 1_000)
-        wait?.click()
-        device.waitForIdle(500)
+    @Test
+    fun emptyHistoryShowsPlaceholder() {
+        ComposeTestHelpers.dismissAnrIfPresent()
+        composeRule.waitForIdle()
+        Thread.sleep(500)
+
+        // Fresh install — no history
+        composeRule.onNodeWithTag(TestTags.EMPTY_HISTORY_TEXT).assertIsDisplayed()
+        composeRule.onNodeWithTag(TestTags.EMPTY_HISTORY_TEXT).assertTextContains("transcriptions", substring = true)
+    }
+
+    @Test
+    fun micButtonIsDisplayedAndClickable() {
+        ComposeTestHelpers.dismissAnrIfPresent()
+        composeRule.waitForIdle()
+        Thread.sleep(500)
+
+        composeRule.onNodeWithTag(TestTags.MIC_BUTTON).assertIsDisplayed()
+        composeRule.onNodeWithTag(TestTags.MIC_BUTTON).assertHasClickAction()
+    }
+
+    @Test
+    fun drawerMenuButtonIsDisplayed() {
+        ComposeTestHelpers.dismissAnrIfPresent()
+        composeRule.waitForIdle()
+        Thread.sleep(500)
+
+        composeRule.onNodeWithTag(TestTags.DRAWER_MENU_BUTTON).assertIsDisplayed()
+    }
+
+    @Test
+    fun accessibilityBannerIsDisplayed() {
+        // On a fresh install, accessibility is not enabled
+        ComposeTestHelpers.dismissAnrIfPresent()
+        composeRule.waitForIdle()
+        Thread.sleep(500)
+
+        composeRule.onNodeWithTag(TestTags.ACCESSIBILITY_BANNER).assertIsDisplayed()
     }
 
     private fun takeScreenshot(name: String) {
