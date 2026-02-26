@@ -47,8 +47,12 @@ object AudioConverter {
 
                 val rawPcm = decodeAllFrames(extractor, codec)
 
-                val sourceSampleRate = format.getInteger(MediaFormat.KEY_SAMPLE_RATE)
-                val channelCount = format.getInteger(MediaFormat.KEY_CHANNEL_COUNT)
+                // Use output format from codec (not input format) for actual decoded PCM params.
+                // The input format may differ from the codec output (e.g., AAC-HE SBR
+                // doubles the sample rate, or the codec may change channel count).
+                val outputFormat = codec.outputFormat
+                val sourceSampleRate = outputFormat.getInteger(MediaFormat.KEY_SAMPLE_RATE)
+                val channelCount = outputFormat.getInteger(MediaFormat.KEY_CHANNEL_COUNT)
 
                 val monoSamples = pcmBytesToFloat(rawPcm, channelCount)
                 return resample(monoSamples, sourceSampleRate, TARGET_SAMPLE_RATE)
