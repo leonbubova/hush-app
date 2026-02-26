@@ -9,6 +9,7 @@ import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.RuntimeEnvironment
 import java.io.File
+import java.security.MessageDigest
 
 @RunWith(RobolectricTestRunner::class)
 class ModelManagerTest {
@@ -163,6 +164,36 @@ class ModelManagerTest {
 
         // Should not throw
         manager.cleanOrphanedModels()
+    }
+
+    @Test
+    fun `all AVAILABLE_MODELS have non-empty sha256`() {
+        for (model in ModelManager.AVAILABLE_MODELS) {
+            assertTrue(
+                "Model ${model.id} has empty sha256",
+                model.sha256.isNotBlank()
+            )
+            assertEquals(
+                "Model ${model.id} sha256 should be 64 hex chars",
+                64, model.sha256.length
+            )
+            assertTrue(
+                "Model ${model.id} sha256 should be lowercase hex",
+                model.sha256.matches(Regex("^[0-9a-f]{64}$"))
+            )
+        }
+    }
+
+    @Test
+    fun `SHA256 hex formatting matches known value`() {
+        val digest = MessageDigest.getInstance("SHA-256")
+        digest.update("test".toByteArray())
+        val hex = digest.digest().joinToString("") { "%02x".format(it) }
+        // SHA-256("test") = 9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08
+        assertEquals(
+            "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08",
+            hex
+        )
     }
 
     @Test

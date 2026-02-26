@@ -11,6 +11,7 @@ import okhttp3.OkHttpClient
 import okhttp3.Request
 import java.io.File
 import java.io.FileOutputStream
+import java.security.MessageDigest
 import java.util.concurrent.TimeUnit
 
 data class ModelInfo(
@@ -18,6 +19,7 @@ data class ModelInfo(
     val displayName: String,
     val downloadUrl: String,
     val sizeBytes: Long,
+    val sha256: String,
 ) {
     val fileName: String
         get() {
@@ -48,18 +50,21 @@ class ModelManager(private val context: Context) {
                 displayName = "Whisper tiny.en INT4 (English, 132 MB)",
                 downloadUrl = "https://github.com/leonbubova/hush-app-models/releases/download/v0.2.0/whisper_tiny_en_q4.pte",
                 sizeBytes = 138_482_176L,
+                sha256 = "e70aabd765950263eadced2c1ca3cfc727f766664304dc6dff52509dcdedb9cb",
             ),
             ModelInfo(
                 id = "whisper-tiny-en-q8",
                 displayName = "Whisper tiny.en INT8 (English, 136 MB)",
                 downloadUrl = "https://github.com/leonbubova/hush-app-models/releases/download/v0.2.0/whisper_tiny_en_q8.pte",
                 sizeBytes = 142_690_304L,
+                sha256 = "2668c50b6b82a624c26728d043ec8f4bee1662c37bdc7c2a2ceab055e86aa3da",
             ),
             ModelInfo(
                 id = "whisper-tiny-en-fp32",
                 displayName = "Whisper tiny.en FP32 (English, 220 MB)",
                 downloadUrl = "https://github.com/leonbubova/hush-app-models/releases/download/v0.2.0/whisper_tiny_en_fp32.pte",
                 sizeBytes = 230_960_384L,
+                sha256 = "801d970cfbc4c86be7795618662db1c5f3fb7d5ec48b629d55dc9496d00b56af",
             ),
         )
 
@@ -154,6 +159,8 @@ class ModelManager(private val context: Context) {
 
             val tempFile = File(modelFile.parent, "${modelFile.name}.tmp")
 
+            val digest = MessageDigest.getInstance("SHA-256")
+
             FileOutputStream(tempFile).use { output ->
                 body.byteStream().use { input ->
                     val buffer = ByteArray(8192)
@@ -163,6 +170,7 @@ class ModelManager(private val context: Context) {
                         val read = input.read(buffer)
                         if (read == -1) break
                         output.write(buffer, 0, read)
+                        digest.update(buffer, 0, read)
                         bytesRead += read
 
                         if (contentLength > 0) {
@@ -172,10 +180,20 @@ class ModelManager(private val context: Context) {
                 }
             }
 
+            val actualHash = digest.digest().joinToString("") { "%02x".format(it) }
+            if (actualHash != info.sha256) {
+                tempFile.delete()
+                updateStatus(modelId, ModelStatus.ERROR)
+                Log.e(TAG, "SHA256 mismatch for $modelId: expected=${info.sha256}, actual=$actualHash")
+                return@withContext Result.failure(
+                    RuntimeException("SHA256 mismatch for $modelId: expected=${info.sha256}, actual=$actualHash")
+                )
+            }
+
             tempFile.renameTo(modelFile)
             updateStatus(modelId, ModelStatus.READY)
             updateProgress(modelId, 1f)
-            Log.i(TAG, "Model $modelId downloaded to ${modelFile.absolutePath}")
+            Log.i(TAG, "Model $modelId downloaded and SHA256 verified: $actualHash")
             Result.success(Unit)
         } catch (e: Exception) {
             updateStatus(modelId, ModelStatus.ERROR)
