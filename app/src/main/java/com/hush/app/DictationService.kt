@@ -6,13 +6,12 @@ import android.app.Service
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Intent
-import android.content.SharedPreferences
 import android.os.Binder
 import android.os.IBinder
 import android.util.Log
 import androidx.core.app.NotificationCompat
-import androidx.security.crypto.EncryptedSharedPreferences
-import androidx.security.crypto.MasterKey
+import com.hush.app.transcription.ProviderFactory
+import com.hush.app.transcription.TranscribeResult
 import kotlinx.coroutines.*
 
 class DictationService : Service() {
@@ -93,17 +92,9 @@ class DictationService : Service() {
 
         scope.launch {
             try {
-                val apiKey = getEncryptedPrefs()
-                    .getString("voxtral_api_key", "") ?: ""
-                if (apiKey.isBlank()) {
-                    withContext(Dispatchers.Main) {
-                        updateState(DictationState.ERROR, "No API key configured")
-                    }
-                    return@launch
-                }
-
-                Log.i("DictationService", "Sending file to Voxtral: ${file.length()} bytes, apiKey length: ${apiKey.length}")
-                val result = VoxtralApi.transcribe(file, apiKey)
+                val provider = ProviderFactory.resolve(this@DictationService)
+                Log.i("DictationService", "Sending file to ${provider.displayName}: ${file.length()} bytes")
+                val result = provider.transcribe(file)
                 Log.i("DictationService", "Transcription result: $result")
                 withContext(Dispatchers.Main) {
                     when (result) {
@@ -130,19 +121,6 @@ class DictationService : Service() {
                 file.delete()
             }
         }
-    }
-
-    private fun getEncryptedPrefs(): SharedPreferences {
-        val masterKey = MasterKey.Builder(this)
-            .setKeyScheme(MasterKey.KeyScheme.AES256_GCM)
-            .build()
-        return EncryptedSharedPreferences.create(
-            this,
-            "hush_secure",
-            masterKey,
-            EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
-            EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM,
-        )
     }
 
     private fun copyToClipboard(text: String) {

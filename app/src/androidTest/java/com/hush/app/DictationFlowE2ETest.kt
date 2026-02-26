@@ -33,10 +33,8 @@ class DictationFlowE2ETest {
     @Test
     fun freshInstall_noApiKey_recordAndStop_showsError() {
         // Permissions are pre-granted by GrantPermissionRule.
-        // On first launch with no API key, the API key dialog appears.
+        // With no API key configured, app launches straight to "Ready".
         dismissAnrIfPresent()
-        composeRule.waitForIdle()
-        composeRule.onNodeWithText("Cancel").performClick()
         composeRule.waitForIdle()
         Thread.sleep(500)
 

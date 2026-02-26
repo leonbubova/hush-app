@@ -18,6 +18,21 @@ android {
         versionCode = 1
         versionName = "0.1.0-mvp"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+
+        // Pass test API keys from local.properties to instrumented tests
+        val localProps = rootProject.file("local.properties")
+        if (localProps.exists()) {
+            val props = Properties().apply { load(FileInputStream(localProps)) }
+            props.getProperty("TEST_VOXTRAL_KEY")?.let {
+                testInstrumentationRunnerArguments["voxtralKey"] = it
+            }
+            props.getProperty("TEST_OPENAI_KEY")?.let {
+                testInstrumentationRunnerArguments["openaiKey"] = it
+            }
+            props.getProperty("TEST_GROQ_KEY")?.let {
+                testInstrumentationRunnerArguments["groqKey"] = it
+            }
+        }
     }
 
     signingConfigs {
@@ -85,6 +100,8 @@ dependencies {
     // Testing
     testImplementation("junit:junit:4.13.2")
     testImplementation("com.squareup.okhttp3:mockwebserver:4.12.0")
+    testImplementation("org.robolectric:robolectric:4.14.1")
+    testImplementation("androidx.test:core:1.6.1")
 
     // Instrumented / E2E testing
     androidTestImplementation(composeBom)

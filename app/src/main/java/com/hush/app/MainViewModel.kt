@@ -5,27 +5,29 @@ import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
 import android.content.ServiceConnection
-import android.content.SharedPreferences
 import android.os.IBinder
 import android.provider.Settings
 import android.text.TextUtils
 import androidx.lifecycle.AndroidViewModel
 import androidx.security.crypto.EncryptedSharedPreferences
 import androidx.security.crypto.MasterKey
+import com.hush.app.transcription.ProviderConfig
+import com.hush.app.transcription.ProviderFactory
+import com.hush.app.transcription.ProviderRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import org.json.JSONArray
 
 class MainViewModel(application: Application) : AndroidViewModel(application) {
 
-    enum class AppScreen { HOME, USAGE }
+    enum class AppScreen { HOME, USAGE, SETTINGS }
 
     data class UiState(
         val dictationState: DictationService.DictationState = DictationService.DictationState.IDLE,
         val history: List<String> = emptyList(),
         val errorMessage: String = "",
-        val apiKey: String = "",
-        val showApiKeyDialog: Boolean = false,
+        val activeProviderId: String = ProviderConfig.PROVIDER_VOXTRAL,
+        val providerConfigs: Map<String, ProviderConfig> = emptyMap(),
         val accessibilityEnabled: Boolean = false,
         val currentScreen: AppScreen = AppScreen.HOME,
         val usageSessions: List<RecordingSession> = emptyList(),
@@ -77,7 +79,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
-    private fun getEncryptedPrefs(context: Context): SharedPreferences {
+    private fun getEncryptedPrefs(context: Context): android.content.SharedPreferences {
         val masterKey = MasterKey.Builder(context)
             .setKeyScheme(MasterKey.KeyScheme.AES256_GCM)
             .build()
@@ -90,7 +92,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         )
     }
 
-    private fun migratePrefsIfNeeded(context: Context, encryptedPrefs: SharedPreferences) {
+    private fun migratePrefsIfNeeded(context: Context, encryptedPrefs: android.content.SharedPreferences) {
         // Migrate from legacy unencrypted prefs
         val oldPrefs = context.getSharedPreferences("flowvoice", Context.MODE_PRIVATE)
         val oldKey = oldPrefs.getString("voxtral_api_key", null)
@@ -129,11 +131,13 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     init {
         val prefs = getEncryptedPrefs(application)
         migratePrefsIfNeeded(application, prefs)
-        val savedKey = prefs.getString("voxtral_api_key", "") ?: ""
+        // ProviderRepository handles migrating voxtral_api_key → provider config
+        val activeId = ProviderRepository.getActiveProviderId(application)
+        val configs = ProviderRepository.getAllConfigs(application)
         _state.value = _state.value.copy(
-            apiKey = savedKey,
+            activeProviderId = activeId,
+            providerConfigs = configs,
             history = loadHistory(),
-            showApiKeyDialog = savedKey.isBlank(),
             accessibilityEnabled = isAccessibilityEnabled(),
             usageSessions = UsageRepository.loadSessions(application),
         )
@@ -157,21 +161,18 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         service?.toggle()
     }
 
-    fun saveApiKey(key: String) {
+    fun setActiveProvider(id: String) {
         val context = getApplication<Application>()
-        getEncryptedPrefs(context)
-            .edit()
-            .putString("voxtral_api_key", key.trim())
-            .apply()
-        _state.value = _state.value.copy(apiKey = key.trim(), showApiKeyDialog = false)
+        ProviderRepository.setActiveProviderId(context, id)
+        _state.value = _state.value.copy(activeProviderId = id)
     }
 
-    fun showApiKeyDialog() {
-        _state.value = _state.value.copy(showApiKeyDialog = true)
-    }
-
-    fun dismissApiKeyDialog() {
-        _state.value = _state.value.copy(showApiKeyDialog = false)
+    fun saveProviderConfig(providerId: String, config: ProviderConfig) {
+        val context = getApplication<Application>()
+        ProviderRepository.saveConfig(context, providerId, config)
+        val updated = _state.value.providerConfigs.toMutableMap()
+        updated[providerId] = config
+        _state.value = _state.value.copy(providerConfigs = updated)
     }
 
     fun clearHistory() {

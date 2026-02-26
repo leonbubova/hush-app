@@ -1,4 +1,4 @@
-# Hush
+# Hush!
 
 Android AI dictation app — speak anywhere, transcribe instantly. A native alternative to Wispr Flow.
 
@@ -8,7 +8,8 @@ Android AI dictation app — speak anywhere, transcribe instantly. A native alte
 - **Auto-inject into text fields** — if a text field is focused, transcribed text is pasted directly at the cursor
 - **Clipboard fallback** — text is always copied to clipboard, even when auto-inject is active
 - **Background service** — persistent foreground notification with quick-action controls
-- **Voxtral transcription** — powered by Mistral's Voxtral speech-to-text API
+- **Multi-provider transcription** — choose between Voxtral (Mistral), OpenAI Whisper, or Groq
+- **Settings screen** — switch providers, configure API keys and models per provider
 - **Custom blob/ring UI** — dark theme with animated glowing blobs and minimal ring-based mic button
 - **Transcription history** — recent transcriptions stored locally with tap-to-copy
 - **Usage dashboard** — streak tracking, transcription stats, weekly activity charts, cost estimates
@@ -17,13 +18,13 @@ Android AI dictation app — speak anywhere, transcribe instantly. A native alte
 
 ### English
 
-#### Step 1: Get a Mistral API key
+#### Step 1: Get an API key
 
-1. Go to [console.mistral.ai](https://console.mistral.ai/) and create an account (or sign in)
-2. Navigate to **API Keys** in the left sidebar ([direct link](https://console.mistral.ai/api-keys/))
-3. Click **Create new key**
-4. Give it a name (e.g. "Hush") and click **Create**
-5. Copy the key — you'll need it in the next step
+Get a key from your preferred transcription provider:
+
+- **Voxtral (Mistral):** [console.mistral.ai](https://console.mistral.ai/) → API Keys
+- **OpenAI Whisper:** [platform.openai.com](https://platform.openai.com/) → API Keys
+- **Groq:** [console.groq.com](https://console.groq.com/) → API Keys
 
 #### Step 2: Install Hush
 
@@ -31,11 +32,11 @@ Android AI dictation app — speak anywhere, transcribe instantly. A native alte
 2. If prompted, allow installation from unknown sources
 3. Open Hush — it will ask for microphone and notification permissions, grant both
 
-#### Step 3: Enter your API key
+#### Step 3: Configure your provider
 
-1. Tap the gear icon (top right)
-2. Paste your Mistral API key
-3. Tap **Save**
+1. Open the drawer (hamburger menu) and tap **Settings**
+2. Select your transcription provider
+3. Paste your API key and tap **Save**
 
 #### Step 4: Enable the accessibility service
 
@@ -54,13 +55,13 @@ Android AI dictation app — speak anywhere, transcribe instantly. A native alte
 
 ### Deutsch
 
-#### Schritt 1: Mistral API-Key erstellen
+#### Schritt 1: API-Key erstellen
 
-1. Gehe zu [console.mistral.ai](https://console.mistral.ai/) und erstelle ein Konto (oder melde dich an)
-2. Klicke links auf **API Keys** ([Direktlink](https://console.mistral.ai/api-keys/))
-3. Klicke auf **Create new key**
-4. Vergib einen Namen (z.B. "Hush") und klicke **Create**
-5. Kopiere den Key — du brauchst ihn gleich
+Erstelle einen Key bei deinem bevorzugten Anbieter:
+
+- **Voxtral (Mistral):** [console.mistral.ai](https://console.mistral.ai/) → API Keys
+- **OpenAI Whisper:** [platform.openai.com](https://platform.openai.com/) → API Keys
+- **Groq:** [console.groq.com](https://console.groq.com/) → API Keys
 
 #### Schritt 2: Hush installieren
 
@@ -68,11 +69,11 @@ Android AI dictation app — speak anywhere, transcribe instantly. A native alte
 2. Falls noetig, erlaube die Installation aus unbekannten Quellen
 3. Oeffne Hush — die App fragt nach Mikrofon- und Benachrichtigungsrechten, beides erlauben
 
-#### Schritt 3: API-Key eingeben
+#### Schritt 3: Anbieter konfigurieren
 
-1. Tippe auf das Zahnrad-Symbol (oben rechts)
-2. Fuege deinen Mistral API-Key ein
-3. Tippe auf **Save**
+1. Oeffne das Menue (Hamburger-Symbol) und tippe auf **Settings**
+2. Waehle deinen Transkriptions-Anbieter
+3. Fuege deinen API-Key ein und tippe auf **Save**
 
 #### Schritt 4: Bedienungshilfe aktivieren
 
@@ -90,21 +91,32 @@ Android AI dictation app — speak anywhere, transcribe instantly. A native alte
 ## Architecture
 
 ```
-MainActivity          — Jetpack Compose UI, permissions, API key setup
-MainViewModel         — state management, service binding
+MainActivity          — Jetpack Compose UI, permissions, navigation
+MainViewModel         — state management, service binding, provider config
 DictationService      — foreground service, recording orchestration, clipboard + broadcast
 HushAccessibilityService — volume key interception, auto-inject via ACTION_PASTE
-AudioRecorder         — MediaRecorder wrapper for WAV capture
-VoxtralApi            — Mistral Voxtral API client
+AudioRecorder         — MediaRecorder wrapper for audio capture
+SettingsScreen        — provider selection and per-provider configuration UI
 HushApp               — Application class, notification channel setup
 UsageScreen           — Compose usage dashboard (streak, charts, heatmap, cost)
 UsageRepository       — session persistence (SharedPreferences + JSON)
+
+transcription/
+  TranscriptionProvider — interface for all transcription backends
+  TranscribeResult      — sealed class: Success(text) | Error(code, message)
+  ProviderConfig        — sealed config hierarchy (Voxtral, OpenAI, Groq, Local)
+  ProviderRepository    — encrypted persistence + legacy API key migration
+  ProviderFactory       — resolves active provider from config
+  VoxtralProvider       — Mistral Voxtral API client
+  OpenAiWhisperProvider — OpenAI Whisper API client
+  GroqProvider          — Groq API client (OpenAI-compatible)
 ```
 
 ### Auto-inject flow
 
 ```
 DictationService.stopRecording()
+  → ProviderFactory.resolve(context) → provider.transcribe(file)
   → copyToClipboard(text)
   → sendBroadcast(ACTION_INJECT_TEXT)
   → HushAccessibilityService receives broadcast
@@ -117,7 +129,9 @@ DictationService.stopRecording()
 
 - Kotlin + Jetpack Compose
 - Android AccessibilityService for global hotkey + text injection
-- Mistral Voxtral API for speech-to-text
+- Multi-provider transcription: Voxtral (Mistral), OpenAI Whisper, Groq
+- OkHttp for API calls
+- EncryptedSharedPreferences for secure credential storage
 - Coroutines for async transcription
 
 ## Compatibility
@@ -159,33 +173,59 @@ adb install -r app/build/outputs/apk/release/app-release.apk
 ## Permissions
 
 - `RECORD_AUDIO` — microphone access for dictation
-- `INTERNET` — sending audio to Voxtral API
+- `INTERNET` — sending audio to transcription API
 - `FOREGROUND_SERVICE` / `FOREGROUND_SERVICE_MICROPHONE` — background recording
 - `POST_NOTIFICATIONS` — status notification
 - Accessibility Service — volume key detection + text field injection
 
 ## Testing
 
-### E2E instrumented test
+### Unit tests (64 tests, no device needed)
 
-The `DictationFlowE2ETest` reproduces a full fresh-install flow on an emulator:
+```bash
+./gradlew testDebugUnitTest
+```
+
+| Suite | Tests | Coverage |
+|---|---|---|
+| `VoxtralApiTest` | 12 | HTTP responses, auth, multipart, real audio upload |
+| `OpenAiWhisperProviderTest` | 11 | Same + language param handling |
+| `GroqProviderTest` | 11 | HTTP responses, auth, multipart |
+| `ProviderConfigTest` | 14 | JSON round-trip, defaults, edge cases |
+| `ProviderFactoryTest` | 8 | Provider resolution, display names, fallback |
+| `UsageRepositoryTest` | 8 | Record/load/clear, MAX_SESSIONS cap, malformed JSON |
+
+### E2E instrumented tests (emulator needed)
+
+#### DictationFlowE2ETest
+
+Fresh-install UI flow with screenshot capture:
 
 1. App launches (permissions pre-granted via `GrantPermissionRule`)
-2. Cancels the API key dialog
-3. Asserts "Ready" state
-4. Taps mic button, asserts "Listening..."
-5. Taps mic button again, asserts "Error" with missing API key message
+2. Asserts "Ready" state
+3. Taps mic button, asserts "Listening..."
+4. Taps mic button again, asserts "Error" with missing API key message
 
-Each checkpoint captures a screenshot for visual regression.
+#### TranscriptionE2ETest
+
+Real audio-to-API transcription tests (skipped if API key not set):
+
+- Sends `test_audio.m4a` ("Hello this is a test for end to end testing") to each provider
+- Asserts transcription contains expected words
+- Keys are read from `local.properties` (gitignored):
+
+```properties
+TEST_VOXTRAL_KEY=your-key
+TEST_OPENAI_KEY=your-key
+TEST_GROQ_KEY=your-key
+```
 
 #### Prerequisites
 
 - AVD named `hush-test` (Pixel 7 profile, 1080x2400 @ 420dpi, API 34)
-- No prior install of `com.hush.app` on the emulator (for clean API key state)
+- No prior install of `com.hush.app` on the emulator (for DictationFlowE2ETest)
 
 #### Environment setup
-
-All commands below assume these variables are set:
 
 ```bash
 export JAVA_HOME=/opt/homebrew/opt/openjdk@17
@@ -194,37 +234,28 @@ EMU=$ANDROID_HOME/emulator/emulator
 ADB=$ANDROID_HOME/platform-tools/adb
 ```
 
-#### Starting the emulator (headless)
+#### Running
 
 ```bash
+# Start emulator (headless)
 $EMU -avd hush-test -no-window -no-audio -no-snapshot-load -gpu host &
 $ADB wait-for-device shell 'while [ "$(getprop sys.boot_completed)" != "1" ]; do sleep 1; done'
-```
 
-#### Running the test
-
-```bash
-# Ensure clean state
+# Clean state for DictationFlowE2ETest
 $ADB -s emulator-5554 uninstall com.hush.app || true
 
-# Run the test
-ANDROID_SERIAL=emulator-5554 ./gradlew :app:connectedDebugAndroidTest \
-  -Pandroid.testInstrumentationRunnerArguments.class=com.hush.app.DictationFlowE2ETest
+# Run all instrumented tests
+ANDROID_SERIAL=emulator-5554 ./gradlew :app:connectedDebugAndroidTest
 
-# Pull screenshots from device
+# Pull screenshots
 $ADB -s emulator-5554 pull /sdcard/Pictures/hush-tests/ screenshots/
 ```
-
-#### Screenshot comparison
-
-- On first run, screenshots are saved as `<name>_baseline.png`
-- On subsequent runs, they are saved as `<name>_latest.png` (baselines are preserved)
-- Baseline files are committed to git; `*_latest.png` files are gitignored
-- Compare visually with any image diff tool
 
 ## Security
 
 - API keys are stored in Android EncryptedSharedPreferences (AES-256)
-- No credentials are included in the APK — each user provides their own Mistral API key
+- No credentials are included in the APK — each user provides their own API key
+- Legacy Voxtral API keys are auto-migrated to the new provider config system
 - Release keystore and passwords are kept in `local.properties` (gitignored)
+- Test API keys are passed via `local.properties` instrumentation args (never in source)
 - Full credential audit performed 2026-02-24: no API keys, passwords, or secrets in codebase or git history

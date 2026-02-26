@@ -93,10 +93,6 @@ class MainActivity : ComponentActivity() {
                                 viewModel.navigateTo(screen)
                                 scope.launch { drawerState.close() }
                             },
-                            onShowSettings = {
-                                viewModel.showApiKeyDialog()
-                                scope.launch { drawerState.close() }
-                            },
                         )
                     },
                 ) {
@@ -104,9 +100,6 @@ class MainActivity : ComponentActivity() {
                         MainViewModel.AppScreen.HOME -> HushScreen(
                             state = state,
                             onToggle = { viewModel.toggle() },
-                            onSaveApiKey = { viewModel.saveApiKey(it) },
-                            onShowApiKeyDialog = { viewModel.showApiKeyDialog() },
-                            onDismissApiKeyDialog = { viewModel.dismissApiKeyDialog() },
                             onClearHistory = { viewModel.clearHistory() },
                             onCopyText = { text ->
                                 val clipboard = getSystemService(CLIPBOARD_SERVICE) as android.content.ClipboardManager
@@ -120,6 +113,13 @@ class MainActivity : ComponentActivity() {
                         )
                         MainViewModel.AppScreen.USAGE -> HushUsageScaffold(
                             sessions = state.usageSessions,
+                            onOpenDrawer = { scope.launch { drawerState.open() } },
+                            onBack = { viewModel.navigateTo(MainViewModel.AppScreen.HOME) },
+                        )
+                        MainViewModel.AppScreen.SETTINGS -> SettingsScreen(
+                            state = state,
+                            onSetActiveProvider = { viewModel.setActiveProvider(it) },
+                            onSaveProviderConfig = { id, config -> viewModel.saveProviderConfig(id, config) },
                             onOpenDrawer = { scope.launch { drawerState.open() } },
                             onBack = { viewModel.navigateTo(MainViewModel.AppScreen.HOME) },
                         )
@@ -171,9 +171,6 @@ class MainActivity : ComponentActivity() {
 fun HushScreen(
     state: MainViewModel.UiState,
     onToggle: () -> Unit,
-    onSaveApiKey: (String) -> Unit,
-    onShowApiKeyDialog: () -> Unit,
-    onDismissApiKeyDialog: () -> Unit,
     onClearHistory: () -> Unit,
     onCopyText: (String) -> Unit = {},
     onEnableAccessibility: () -> Unit = {},
@@ -202,7 +199,7 @@ fun HushScreen(
                 },
                 title = {
                     Text(
-                        "Hush",
+                        "Hush!",
                         fontFamily = PlayfairDisplay,
                         fontWeight = FontWeight.Bold,
                         color = Color.White,
@@ -385,14 +382,6 @@ fun HushScreen(
         } // end Box
     }
 
-    // API Key Dialog
-    if (state.showApiKeyDialog) {
-        ApiKeyDialog(
-            currentKey = state.apiKey,
-            onSave = onSaveApiKey,
-            onDismiss = onDismissApiKeyDialog,
-        )
-    }
 }
 
 @Composable
@@ -586,93 +575,6 @@ fun MicButton(
     }
 }
 
-@Composable
-fun ApiKeyDialog(
-    currentKey: String,
-    onSave: (String) -> Unit,
-    onDismiss: () -> Unit,
-) {
-    val hasKey = currentKey.isNotBlank()
-    var isEditing by remember { mutableStateOf(!hasKey) }
-    var key by remember { mutableStateOf("") }
-
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text("API Key") },
-        text = {
-            Column {
-                if (!isEditing && hasKey) {
-                    Text(
-                        "Your Mistral API key is set.",
-                        fontSize = 14.sp,
-                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
-                    )
-                    Spacer(Modifier.height(12.dp))
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clip(RoundedCornerShape(12.dp))
-                            .background(MaterialTheme.colorScheme.surfaceVariant)
-                            .padding(horizontal = 16.dp, vertical = 14.dp),
-                    ) {
-                        Text(
-                            "············${currentKey.takeLast(4)}",
-                            fontSize = 16.sp,
-                            color = MaterialTheme.colorScheme.onSurface,
-                            modifier = Modifier.weight(1f),
-                        )
-                    }
-                    Spacer(Modifier.height(8.dp))
-                    TextButton(onClick = { isEditing = true }) {
-                        Text("Change key")
-                    }
-                } else {
-                    Text(
-                        if (hasKey) "Enter your new API key." else "Enter your Mistral AI API key for transcription.",
-                        fontSize = 14.sp,
-                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
-                    )
-                    Spacer(Modifier.height(16.dp))
-                    OutlinedTextField(
-                        value = key,
-                        onValueChange = { key = it },
-                        label = { Text("API Key") },
-                        singleLine = true,
-                        modifier = Modifier.fillMaxWidth(),
-                    )
-                }
-            }
-        },
-        confirmButton = {
-            if (isEditing) {
-                TextButton(
-                    onClick = { onSave(key) },
-                    enabled = key.isNotBlank(),
-                ) {
-                    Text("Save")
-                }
-            } else {
-                TextButton(onClick = onDismiss) {
-                    Text("Done")
-                }
-            }
-        },
-        dismissButton = {
-            TextButton(onClick = {
-                if (isEditing && hasKey) {
-                    isEditing = false
-                    key = ""
-                } else {
-                    onDismiss()
-                }
-            }) {
-                Text("Cancel")
-            }
-        },
-    )
-}
-
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HushUsageScaffold(
@@ -711,7 +613,6 @@ fun HushUsageScaffold(
 fun HushDrawerContent(
     currentScreen: MainViewModel.AppScreen,
     onNavigate: (MainViewModel.AppScreen) -> Unit,
-    onShowSettings: () -> Unit,
 ) {
     ModalDrawerSheet(
         drawerContainerColor = Color(0xFF1A1A2E),
@@ -738,8 +639,8 @@ fun HushDrawerContent(
         )
         DrawerItem(
             label = "Settings",
-            selected = false,
-            onClick = onShowSettings,
+            selected = currentScreen == MainViewModel.AppScreen.SETTINGS,
+            onClick = { onNavigate(MainViewModel.AppScreen.SETTINGS) },
         )
     }
 }

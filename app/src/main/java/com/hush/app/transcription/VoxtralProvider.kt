@@ -1,39 +1,36 @@
-package com.hush.app
+package com.hush.app.transcription
 
+import android.util.Log
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.MultipartBody
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.RequestBody.Companion.asRequestBody
 import org.json.JSONObject
-import android.util.Log
 import java.io.File
-import java.net.UnknownHostException
 import java.net.SocketTimeoutException
+import java.net.UnknownHostException
 import java.util.concurrent.TimeUnit
 
-sealed class TranscribeResult {
-    data class Success(val text: String) : TranscribeResult()
-    data class Error(val code: Int?, val message: String) : TranscribeResult()
-}
+class VoxtralProvider(
+    private val config: ProviderConfig.Voxtral,
+) : TranscriptionProvider {
 
-object VoxtralApi {
+    override val displayName = "Voxtral (Mistral)"
+    override val id = ProviderConfig.PROVIDER_VOXTRAL
+    override val requiresNetwork = true
 
-    private const val TAG = "VoxtralApi"
-    private const val ENDPOINT = "https://api.mistral.ai/v1/audio/transcriptions"
+    override suspend fun transcribe(audioFile: File): TranscribeResult {
+        val apiKey = config.apiKey
+        if (apiKey.isBlank()) {
+            return TranscribeResult.Error(null, "No API key configured")
+        }
 
-    private val client = OkHttpClient.Builder()
-        .connectTimeout(30, TimeUnit.SECONDS)
-        .readTimeout(60, TimeUnit.SECONDS)
-        .writeTimeout(60, TimeUnit.SECONDS)
-        .build()
-
-    fun transcribe(audioFile: File, apiKey: String, endpoint: String = ENDPOINT): TranscribeResult {
-        Log.i(TAG, "transcribe: file=${audioFile.absolutePath} size=${audioFile.length()} bytes, keyLength=${apiKey.length}")
+        Log.i(TAG, "transcribe: file=${audioFile.absolutePath} size=${audioFile.length()} bytes")
 
         val body = MultipartBody.Builder()
             .setType(MultipartBody.FORM)
-            .addFormDataPart("model", "voxtral-mini-latest")
+            .addFormDataPart("model", config.model)
             .addFormDataPart(
                 "file",
                 audioFile.name,
@@ -42,16 +39,15 @@ object VoxtralApi {
             .build()
 
         val request = Request.Builder()
-            .url(endpoint)
+            .url(config.endpoint)
             .addHeader("Authorization", "Bearer $apiKey")
             .post(body)
             .build()
 
         return try {
-            Log.i(TAG, "transcribe: sending request...")
             val response = client.newCall(request).execute()
             val responseBody = response.body?.string()
-            Log.i(TAG, "transcribe: response code=${response.code}, body=$responseBody")
+            Log.i(TAG, "transcribe: response code=${response.code}")
             if (response.isSuccessful) {
                 val json = JSONObject(responseBody ?: return TranscribeResult.Error(null, "Empty response from server"))
                 TranscribeResult.Success(json.getString("text"))
@@ -75,5 +71,14 @@ object VoxtralApi {
             Log.e(TAG, "transcribe: exception", e)
             TranscribeResult.Error(null, "Network error: ${e.message ?: "unknown"}")
         }
+    }
+
+    companion object {
+        private const val TAG = "VoxtralProvider"
+        private val client = OkHttpClient.Builder()
+            .connectTimeout(30, TimeUnit.SECONDS)
+            .readTimeout(60, TimeUnit.SECONDS)
+            .writeTimeout(60, TimeUnit.SECONDS)
+            .build()
     }
 }
