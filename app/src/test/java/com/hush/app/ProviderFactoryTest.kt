@@ -3,7 +3,10 @@ package com.hush.app
 import com.hush.app.transcription.*
 import org.junit.Assert.*
 import org.junit.Test
+import org.junit.runner.RunWith
+import org.robolectric.RobolectricTestRunner
 
+@RunWith(RobolectricTestRunner::class)
 class ProviderFactoryTest {
 
     @Test
@@ -42,11 +45,23 @@ class ProviderFactoryTest {
     }
 
     @Test
-    fun `allProviderIds contains all cloud providers`() {
+    fun `create returns LocalProvider for local ID with context`() {
+        val config = ProviderConfig.Local()
+        val context = org.robolectric.RuntimeEnvironment.getApplication()
+        val provider = ProviderFactory.create(ProviderConfig.PROVIDER_LOCAL, config, context)
+
+        assertTrue(provider is LocalProvider)
+        assertEquals(ProviderConfig.PROVIDER_LOCAL, provider.id)
+        assertFalse(provider.requiresNetwork)
+    }
+
+    @Test
+    fun `allProviderIds contains all providers including local`() {
         val ids = ProviderFactory.allProviderIds
         assertTrue(ids.contains(ProviderConfig.PROVIDER_VOXTRAL))
         assertTrue(ids.contains(ProviderConfig.PROVIDER_OPENAI))
         assertTrue(ids.contains(ProviderConfig.PROVIDER_GROQ))
+        assertTrue(ids.contains(ProviderConfig.PROVIDER_LOCAL))
     }
 
     @Test
@@ -54,6 +69,7 @@ class ProviderFactoryTest {
         assertEquals("Voxtral (Mistral)", ProviderFactory.displayName(ProviderConfig.PROVIDER_VOXTRAL))
         assertEquals("OpenAI Whisper", ProviderFactory.displayName(ProviderConfig.PROVIDER_OPENAI))
         assertEquals("Groq", ProviderFactory.displayName(ProviderConfig.PROVIDER_GROQ))
+        assertEquals("Local (On-Device)", ProviderFactory.displayName(ProviderConfig.PROVIDER_LOCAL))
     }
 
     @Test

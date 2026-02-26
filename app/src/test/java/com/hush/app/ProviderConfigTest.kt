@@ -100,7 +100,7 @@ class ProviderConfigTest {
     @Test
     fun `Local default has sensible values`() {
         val config = ProviderConfig.default(ProviderConfig.PROVIDER_LOCAL) as ProviderConfig.Local
-        assertEquals("whisper-tiny-en", config.model)
+        assertEquals("whisper-tiny-en-q4", config.model)
         assertEquals("", config.language)
     }
 

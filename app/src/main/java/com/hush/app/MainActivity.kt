@@ -120,6 +120,8 @@ class MainActivity : ComponentActivity() {
                             state = state,
                             onSetActiveProvider = { viewModel.setActiveProvider(it) },
                             onSaveProviderConfig = { id, config -> viewModel.saveProviderConfig(id, config) },
+                            onDownloadModel = { viewModel.downloadModel(it) },
+                            onDeleteModel = { viewModel.deleteModel(it) },
                             onOpenDrawer = { scope.launch { drawerState.open() } },
                             onBack = { viewModel.navigateTo(MainViewModel.AppScreen.HOME) },
                         )

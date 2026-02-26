@@ -81,6 +81,7 @@ object ProviderRepository {
         ProviderConfig.PROVIDER_VOXTRAL,
         ProviderConfig.PROVIDER_OPENAI,
         ProviderConfig.PROVIDER_GROQ,
+        ProviderConfig.PROVIDER_LOCAL,
     )
 
     private fun migrateIfNeeded(prefs: SharedPreferences) {

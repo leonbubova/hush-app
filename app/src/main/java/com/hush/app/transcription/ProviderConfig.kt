@@ -41,7 +41,7 @@ sealed class ProviderConfig {
     }
 
     data class Local(
-        val model: String = "whisper-tiny-en",
+        val model: String = "whisper-tiny-en-q4",
         val language: String = "",
     ) : ProviderConfig() {
         override fun toJson() = JSONObject().apply {
@@ -72,7 +72,7 @@ sealed class ProviderConfig {
                 model = json.optString("model", "whisper-large-v3-turbo"),
             )
             PROVIDER_LOCAL -> Local(
-                model = json.optString("model", "whisper-tiny-en"),
+                model = json.optString("model", "whisper-tiny-en-q4"),
                 language = json.optString("language", ""),
             )
             else -> Voxtral()

@@ -11,12 +11,16 @@ import android.text.TextUtils
 import androidx.lifecycle.AndroidViewModel
 import androidx.security.crypto.EncryptedSharedPreferences
 import androidx.security.crypto.MasterKey
+import com.hush.app.transcription.ModelManager
+import com.hush.app.transcription.ModelStatus
 import com.hush.app.transcription.ProviderConfig
 import com.hush.app.transcription.ProviderFactory
 import com.hush.app.transcription.ProviderRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.launch
 import org.json.JSONArray
+import androidx.lifecycle.viewModelScope
 
 class MainViewModel(application: Application) : AndroidViewModel(application) {
 
@@ -31,10 +35,14 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         val accessibilityEnabled: Boolean = false,
         val currentScreen: AppScreen = AppScreen.HOME,
         val usageSessions: List<RecordingSession> = emptyList(),
+        val modelStatuses: Map<String, ModelStatus> = emptyMap(),
+        val modelDownloadProgress: Map<String, Float> = emptyMap(),
     )
 
     private val _state = MutableStateFlow(UiState())
     val state = _state.asStateFlow()
+
+    private val modelManager = ModelManager(application)
 
     private var service: DictationService? = null
     private var bound = false
@@ -141,6 +149,17 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             accessibilityEnabled = isAccessibilityEnabled(),
             usageSessions = UsageRepository.loadSessions(application),
         )
+        // Observe model download statuses and progress
+        viewModelScope.launch {
+            modelManager.statuses.collect { statuses ->
+                _state.value = _state.value.copy(modelStatuses = statuses)
+            }
+        }
+        viewModelScope.launch {
+            modelManager.downloadProgress.collect { progress ->
+                _state.value = _state.value.copy(modelDownloadProgress = progress)
+            }
+        }
     }
 
     fun startServiceIfNeeded() {
@@ -173,6 +192,16 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         val updated = _state.value.providerConfigs.toMutableMap()
         updated[providerId] = config
         _state.value = _state.value.copy(providerConfigs = updated)
+    }
+
+    fun downloadModel(modelId: String) {
+        viewModelScope.launch {
+            modelManager.downloadModel(modelId)
+        }
+    }
+
+    fun deleteModel(modelId: String) {
+        modelManager.deleteModel(modelId)
     }
 
     fun clearHistory() {

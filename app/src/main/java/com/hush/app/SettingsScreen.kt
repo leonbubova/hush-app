@@ -17,6 +17,8 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.hush.app.transcription.ModelManager
+import com.hush.app.transcription.ModelStatus
 import com.hush.app.transcription.ProviderConfig
 import com.hush.app.transcription.ProviderFactory
 
@@ -31,6 +33,8 @@ fun SettingsScreen(
     state: MainViewModel.UiState,
     onSetActiveProvider: (String) -> Unit,
     onSaveProviderConfig: (String, ProviderConfig) -> Unit,
+    onDownloadModel: (String) -> Unit = {},
+    onDeleteModel: (String) -> Unit = {},
     onOpenDrawer: () -> Unit,
     onBack: () -> Unit,
 ) {
@@ -88,6 +92,10 @@ fun SettingsScreen(
                     providerId = state.activeProviderId,
                     config = activeConfig,
                     onSave = { onSaveProviderConfig(state.activeProviderId, it) },
+                    modelStatuses = state.modelStatuses,
+                    modelDownloadProgress = state.modelDownloadProgress,
+                    onDownloadModel = onDownloadModel,
+                    onDeleteModel = onDeleteModel,
                 )
             }
 
@@ -143,12 +151,23 @@ private fun ProviderConfigPanel(
     providerId: String,
     config: ProviderConfig,
     onSave: (ProviderConfig) -> Unit,
+    modelStatuses: Map<String, ModelStatus> = emptyMap(),
+    modelDownloadProgress: Map<String, Float> = emptyMap(),
+    onDownloadModel: (String) -> Unit = {},
+    onDeleteModel: (String) -> Unit = {},
 ) {
     when (config) {
         is ProviderConfig.Voxtral -> VoxtralConfigPanel(config, onSave)
         is ProviderConfig.OpenAiWhisper -> OpenAiConfigPanel(config, onSave)
         is ProviderConfig.Groq -> GroqConfigPanel(config, onSave)
-        is ProviderConfig.Local -> {} // Phase 2
+        is ProviderConfig.Local -> LocalConfigPanel(
+            config = config,
+            onSave = onSave,
+            modelStatuses = modelStatuses,
+            modelDownloadProgress = modelDownloadProgress,
+            onDownloadModel = onDownloadModel,
+            onDeleteModel = onDeleteModel,
+        )
     }
 }
 
@@ -257,6 +276,147 @@ private fun GroqConfigPanel(
             enabled = apiKey != config.apiKey || model != config.model,
             onClick = { onSave(config.copy(apiKey = apiKey.trim(), model = model)) },
         )
+    }
+}
+
+@Composable
+private fun LocalConfigPanel(
+    config: ProviderConfig.Local,
+    onSave: (ProviderConfig) -> Unit,
+    modelStatuses: Map<String, ModelStatus>,
+    modelDownloadProgress: Map<String, Float>,
+    onDownloadModel: (String) -> Unit,
+    onDeleteModel: (String) -> Unit,
+) {
+    var model by remember(config) { mutableStateOf(config.model) }
+    var language by remember(config) { mutableStateOf(config.language) }
+
+    val selectedModelInfo = ModelManager.getModelInfo(model)
+    val modelStatus = modelStatuses[model] ?: ModelStatus.NOT_DOWNLOADED
+    val progress = modelDownloadProgress[model] ?: 0f
+
+    ConfigSection(title = "Local Configuration") {
+        Text(
+            "No API key needed. Runs entirely on your device.",
+            fontSize = 13.sp,
+            color = Color(0xFF6C63FF).copy(alpha = 0.8f),
+            modifier = Modifier.padding(bottom = 12.dp),
+        )
+
+        // Model selector
+        ModelDropdown(
+            selected = model,
+            options = ModelManager.AVAILABLE_MODELS.map { it.id },
+            onSelect = { model = it },
+        )
+
+        Spacer(Modifier.height(12.dp))
+
+        // Model status + download/delete
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(12.dp),
+            colors = CardDefaults.cardColors(containerColor = Color.White.copy(alpha = 0.04f)),
+        ) {
+            Column(modifier = Modifier.padding(12.dp)) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            selectedModelInfo?.displayName ?: model,
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.Medium,
+                            color = Color.White.copy(alpha = 0.9f),
+                        )
+                        Text(
+                            when (modelStatus) {
+                                ModelStatus.NOT_DOWNLOADED -> "Not downloaded (${formatSize(selectedModelInfo?.sizeBytes ?: 0)})"
+                                ModelStatus.DOWNLOADING -> "Downloading... ${(progress * 100).toInt()}%"
+                                ModelStatus.READY -> "Ready"
+                                ModelStatus.ERROR -> "Download failed"
+                            },
+                            fontSize = 12.sp,
+                            color = when (modelStatus) {
+                                ModelStatus.READY -> Color(0xFF4CAF50)
+                                ModelStatus.ERROR -> Color(0xFFEF5350)
+                                ModelStatus.DOWNLOADING -> Color(0xFF6C63FF)
+                                else -> Color.White.copy(alpha = 0.5f)
+                            },
+                        )
+                    }
+
+                    when (modelStatus) {
+                        ModelStatus.NOT_DOWNLOADED, ModelStatus.ERROR -> {
+                            Button(
+                                onClick = { onDownloadModel(model) },
+                                shape = RoundedCornerShape(8.dp),
+                                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF6C63FF)),
+                                contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
+                            ) {
+                                Text("Download", fontSize = 13.sp)
+                            }
+                        }
+                        ModelStatus.DOWNLOADING -> {
+                            CircularProgressIndicator(
+                                progress = { progress },
+                                modifier = Modifier.size(32.dp),
+                                color = Color(0xFF6C63FF),
+                                trackColor = Color.White.copy(alpha = 0.1f),
+                                strokeWidth = 3.dp,
+                            )
+                        }
+                        ModelStatus.READY -> {
+                            TextButton(onClick = { onDeleteModel(model) }) {
+                                Text("Delete", color = Color(0xFFEF5350), fontSize = 13.sp)
+                            }
+                        }
+                    }
+                }
+
+                if (modelStatus == ModelStatus.DOWNLOADING) {
+                    Spacer(Modifier.height(8.dp))
+                    LinearProgressIndicator(
+                        progress = { progress },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(4.dp)
+                            .clip(RoundedCornerShape(2.dp)),
+                        color = Color(0xFF6C63FF),
+                        trackColor = Color.White.copy(alpha = 0.1f),
+                    )
+                }
+            }
+        }
+
+        Spacer(Modifier.height(12.dp))
+
+        OutlinedTextField(
+            value = language,
+            onValueChange = { language = it },
+            label = { Text("Language (optional, e.g. en, de)") },
+            singleLine = true,
+            modifier = Modifier.fillMaxWidth(),
+            colors = settingsTextFieldColors(),
+        )
+
+        Spacer(Modifier.height(16.dp))
+
+        SaveButton(
+            enabled = model != config.model || language != config.language,
+            onClick = { onSave(config.copy(model = model, language = language.trim())) },
+        )
+    }
+}
+
+private fun formatSize(bytes: Long): String {
+    return when {
+        bytes >= 1_000_000_000 -> String.format("%.1f GB", bytes / 1_000_000_000.0)
+        bytes >= 1_000_000 -> String.format("%.0f MB", bytes / 1_000_000.0)
+        bytes >= 1_000 -> String.format("%.0f KB", bytes / 1_000.0)
+        else -> "$bytes B"
     }
 }
 
