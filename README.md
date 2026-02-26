@@ -209,13 +209,7 @@ Hush supports local on-device transcription using ExecuTorch with Whisper models
 
 ### Exporting the Whisper model
 
-```bash
-git clone https://github.com/pytorch/executorch.git && cd executorch
-pip install -e ".[all]"
-python -m executorch.examples.models.whisper.export --model tiny.en --output whisper_tiny_en.pte
-```
-
-This produces a `whisper_tiny_en.pte` file (~77 MB). Host it at a URL and configure the download URL in `ModelManager.kt`.
+See [`notes/PLAN-model-export.md`](notes/PLAN-model-export.md) for the full export plan with 3 quantization variants (INT4, INT8, FP32).
 
 ### Using local transcription
 
@@ -309,7 +303,7 @@ $ADB -s emulator-5554 pull /sdcard/Pictures/hush-tests/ screenshots/
 
 ## Claude Code Emulator Session
 
-For AI-assisted development, the project includes a prompt for running a dedicated emulator/build session alongside a sandboxed code-editing session. See [`docs/emulator-session-prompt.md`](docs/emulator-session-prompt.md) for the full setup.
+For AI-assisted development, the project includes a prompt for running a dedicated emulator/build session alongside a sandboxed code-editing session. See [`notes/emulator-session-prompt.md`](notes/emulator-session-prompt.md) for the full setup.
 
 The emulator session handles:
 - Building and deploying the debug APK

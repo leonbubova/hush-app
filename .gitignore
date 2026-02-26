@@ -27,3 +27,10 @@ screenshots/*_latest.png
 
 # Dev screenshots (local emulator captures)
 dev-screenshots/
+
+# Claude Code (track rules and skills, ignore operational files)
+.claude/settings.local.json
+.claude/build-result.md
+.claude/dump.xml
+.claude/hot-reload.sh
+.claude/.last-build-timestamp
