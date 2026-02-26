@@ -3,6 +3,7 @@ package com.hush.app
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
@@ -452,17 +453,25 @@ private fun ThisWeekCard(sessions: List<RecordingSession>, today: LocalDate, zon
                 val y = size.height - h
 
                 val isMax = i == maxIdx && count > 0
-                val barColor = if (isMax) {
-                    AccentPink
+                if (isMax) {
+                    drawRoundRect(
+                        brush = Brush.verticalGradient(
+                            colors = listOf(Color(0xFFB85C8A), Color(0xFF7B52B5)),
+                            startY = y,
+                            endY = size.height,
+                        ),
+                        topLeft = Offset(x, y),
+                        size = Size(barW, h),
+                        cornerRadius = CornerRadius(cornerR, cornerR),
+                    )
                 } else {
-                    Color.White.copy(alpha = 0.08f + (count.toFloat() / maxCount) * 0.08f)
+                    drawRoundRect(
+                        color = Color(0xFF2D2845),
+                        topLeft = Offset(x, y),
+                        size = Size(barW, h),
+                        cornerRadius = CornerRadius(cornerR, cornerR),
+                    )
                 }
-                drawRoundRect(
-                    color = barColor,
-                    topLeft = Offset(x, y),
-                    size = Size(barW, h),
-                    cornerRadius = CornerRadius(cornerR, cornerR),
-                )
             }
         }
 
@@ -498,7 +507,7 @@ private fun ActivityHeatmapCard(sessions: List<RecordingSession>, today: LocalDa
 
     val heatColors = remember {
         listOf(
-            Color(0xFF1A1525),           // 0 sessions — very dark
+            Color(0xFF2A2240),           // 0 sessions — dark but visible
             Color(0xFF352655),           // 1 — muted purple
             Color(0xFF5A3D8A),           // 2 — medium purple
             Color(0xFF7B52B5),           // 3-4 — brighter purple
@@ -506,7 +515,8 @@ private fun ActivityHeatmapCard(sessions: List<RecordingSession>, today: LocalDa
         )
     }
 
-    val dayLabels = remember { listOf("M", "", "W", "", "F", "", "") }
+    // Day labels: Mon=0..Sun=6, only show select days
+    val dayLabels = remember { listOf("Mon", "", "Wed", "", "Fri", "", "Sun") }
 
     UsageCard {
         Row(
@@ -518,49 +528,60 @@ private fun ActivityHeatmapCard(sessions: List<RecordingSession>, today: LocalDa
         }
         Spacer(Modifier.height(12.dp))
 
-        Row(modifier = Modifier.fillMaxWidth()) {
-            Column(
-                modifier = Modifier.width(16.dp).height(140.dp),
-                verticalArrangement = Arrangement.SpaceEvenly,
-            ) {
-                dayLabels.forEach { label ->
-                    Text(
-                        label,
-                        fontSize = 9.sp,
-                        color = LabelColor,
-                        modifier = Modifier.height(16.dp),
-                    )
-                }
-            }
+        BoxWithConstraints(modifier = Modifier.fillMaxWidth()) {
+            val cols = weeksBack
+            val rows = 7
+            val labelWidthDp = 24.dp
+            val gapDp = 3.dp
+            val gridWidthDp = maxWidth - labelWidthDp
+            val cellSizeDp = (gridWidthDp - gapDp * (cols - 1)) / cols
+            val gridHeightDp = cellSizeDp * rows + gapDp * (rows - 1)
 
-            Canvas(modifier = Modifier.weight(1f).height(140.dp)) {
-                val cols = weeksBack
-                val rows = 7
-                val gap = 4.dp.toPx()
-                val cellW = (size.width - gap * (cols - 1)) / cols
-                val cellH = (size.height - gap * (rows - 1)) / rows
-                val cellSize = minOf(cellW, cellH)
-                val cornerR = CornerRadius(3.dp.toPx())
-
-                for (col in 0 until cols) {
-                    for (row in 0 until rows) {
-                        val day = gridStart.plusWeeks(col.toLong()).plusDays(row.toLong())
-                        val count = dayCounts[day] ?: 0
-                        val colorIdx = when {
-                            count == 0 -> 0
-                            count == 1 -> 1
-                            count == 2 -> 2
-                            count <= 4 -> 3
-                            else -> 4
+            Row(modifier = Modifier.fillMaxWidth()) {
+                // Day labels column — positioned to align with cell centers
+                Column(
+                    modifier = Modifier.width(labelWidthDp).height(gridHeightDp),
+                ) {
+                    dayLabels.forEachIndexed { i, label ->
+                        if (i > 0) Spacer(Modifier.height(gapDp))
+                        Box(
+                            modifier = Modifier.height(cellSizeDp).fillMaxWidth(),
+                            contentAlignment = Alignment.CenterStart,
+                        ) {
+                            Text(
+                                label,
+                                fontSize = 9.sp,
+                                color = LabelColor,
+                            )
                         }
-                        val x = col * (cellSize + gap)
-                        val y = row * (cellSize + gap)
-                        drawRoundRect(
-                            color = heatColors[colorIdx],
-                            topLeft = Offset(x, y),
-                            size = Size(cellSize, cellSize),
-                            cornerRadius = cornerR,
-                        )
+                    }
+                }
+
+                Canvas(modifier = Modifier.weight(1f).height(gridHeightDp)) {
+                    val gap = gapDp.toPx()
+                    val cellSize = (size.width - gap * (cols - 1)) / cols
+                    val cornerR = CornerRadius(3.dp.toPx())
+
+                    for (col in 0 until cols) {
+                        for (row in 0 until rows) {
+                            val day = gridStart.plusWeeks(col.toLong()).plusDays(row.toLong())
+                            val count = dayCounts[day] ?: 0
+                            val colorIdx = when {
+                                count == 0 -> 0
+                                count == 1 -> 1
+                                count == 2 -> 2
+                                count <= 4 -> 3
+                                else -> 4
+                            }
+                            val x = col * (cellSize + gap)
+                            val y = row * (cellSize + gap)
+                            drawRoundRect(
+                                color = heatColors[colorIdx],
+                                topLeft = Offset(x, y),
+                                size = Size(cellSize, cellSize),
+                                cornerRadius = cornerR,
+                            )
+                        }
                     }
                 }
             }
@@ -606,7 +627,7 @@ private fun CostCard(sessions: List<RecordingSession>, today: LocalDate, zone: Z
         Text("ESTIMATED COST", fontSize = 11.sp, color = LabelColor, letterSpacing = 1.5.sp)
         Spacer(Modifier.height(4.dp))
         Text(
-            "Based on Voxtral Mini at \$0.003/min",
+            "Based on Voxtral Mini at €0.003/min",
             fontSize = 10.sp,
             color = LabelColor,
         )
@@ -661,7 +682,7 @@ private fun formatNumber(n: Int): String = when {
 }
 
 private fun formatCost(cost: Double): String = when {
-    cost < 0.01 -> "$${String.format("%.4f", cost)}"
-    cost < 1.0 -> "$${String.format("%.3f", cost)}"
-    else -> "$${String.format("%.2f", cost)}"
+    cost < 0.01 -> "€${String.format("%.4f", cost)}"
+    cost < 1.0 -> "€${String.format("%.3f", cost)}"
+    else -> "€${String.format("%.2f", cost)}"
 }
