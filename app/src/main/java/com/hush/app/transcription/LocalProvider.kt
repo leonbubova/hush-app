@@ -34,12 +34,12 @@ class LocalProvider(
 
     companion object {
         private const val TAG = "LocalProvider"
-        private const val MAX_DECODE_TOKENS = 128
+        private const val MAX_DECODE_TOKENS = 448  // Whisper standard max for 30s audio
 
         // Whisper defaults (overridden by model metadata if available)
         private const val DEFAULT_EOS_ID = 50256L
         private const val DEFAULT_DECODER_START_TOKEN_ID = 50258L
-        private const val DEFAULT_MAX_SEQ_LEN = 128
+        private const val DEFAULT_MAX_SEQ_LEN = 448
     }
 
     override suspend fun transcribe(audioFile: File): TranscribeResult = withContext(Dispatchers.Default) {
@@ -157,13 +157,18 @@ class LocalProvider(
                 longArrayOf(1)
             )
 
-            // Execute decoder
-            val decoderResult = module.execute(
-                "text_decoder",
-                EValue.from(tokenTensor),
-                encoderOutput,
-                EValue.from(positionTensor)
-            )
+            // Execute decoder — catch per-step failures to return partial results
+            val decoderResult = try {
+                module.execute(
+                    "text_decoder",
+                    EValue.from(tokenTensor),
+                    encoderOutput,
+                    EValue.from(positionTensor)
+                )
+            } catch (e: Exception) {
+                Log.e(TAG, "Decoder step $step failed: ${e.message}", e)
+                break
+            }
 
             if (decoderResult.isEmpty()) {
                 Log.w(TAG, "Decoder returned empty result at step $step")
@@ -180,6 +185,10 @@ class LocalProvider(
 
             tokens.add(nextToken)
             currentToken = nextToken
+        }
+
+        if (tokens.size >= maxTokens) {
+            Log.w(TAG, "Reached max decode tokens ($maxTokens) without EOS — output may be truncated")
         }
 
         return tokens

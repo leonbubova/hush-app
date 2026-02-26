@@ -45,19 +45,19 @@ class ModelManager(private val context: Context) {
         val AVAILABLE_MODELS = listOf(
             ModelInfo(
                 id = "whisper-tiny-en-q4",
-                displayName = "Whisper tiny.en INT4 (132 MB)",
+                displayName = "Whisper tiny.en INT4 (English, 132 MB)",
                 downloadUrl = "https://github.com/leonbubova/hush-app-models/releases/download/v0.2.0/whisper_tiny_en_q4.pte",
                 sizeBytes = 138_482_176L,
             ),
             ModelInfo(
                 id = "whisper-tiny-en-q8",
-                displayName = "Whisper tiny.en INT8 (136 MB)",
+                displayName = "Whisper tiny.en INT8 (English, 136 MB)",
                 downloadUrl = "https://github.com/leonbubova/hush-app-models/releases/download/v0.2.0/whisper_tiny_en_q8.pte",
                 sizeBytes = 142_690_304L,
             ),
             ModelInfo(
                 id = "whisper-tiny-en-fp32",
-                displayName = "Whisper tiny.en FP32 (220 MB)",
+                displayName = "Whisper tiny.en FP32 (English, 220 MB)",
                 downloadUrl = "https://github.com/leonbubova/hush-app-models/releases/download/v0.2.0/whisper_tiny_en_fp32.pte",
                 sizeBytes = 230_960_384L,
             ),
