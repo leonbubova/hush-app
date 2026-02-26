@@ -37,24 +37,24 @@ class ModelManager(private val context: Context) {
         val AVAILABLE_MODELS = listOf(
             ModelInfo(
                 id = "whisper-tiny-en-q4",
-                displayName = "Whisper tiny.en quantized INT4 (~45 MB)",
+                displayName = "Whisper tiny.en INT4",
                 fileName = "whisper_tiny_en_q4.pte",
-                downloadUrl = "", // TODO: Set download URL when model is hosted
-                sizeBytes = 45_000_000L,
+                downloadUrl = "https://github.com/leonbubova/hush-app-models/releases/download/v0.1.0/whisper_tiny_en_q4.pte",
+                sizeBytes = 198_536_320L,
             ),
             ModelInfo(
                 id = "whisper-tiny-en-q8",
-                displayName = "Whisper tiny.en quantized INT8 (~65 MB)",
+                displayName = "Whisper tiny.en INT8",
                 fileName = "whisper_tiny_en_q8.pte",
-                downloadUrl = "", // TODO: Set download URL when model is hosted
-                sizeBytes = 65_000_000L,
+                downloadUrl = "https://github.com/leonbubova/hush-app-models/releases/download/v0.1.0/whisper_tiny_en_q8.pte",
+                sizeBytes = 202_744_448L,
             ),
             ModelInfo(
                 id = "whisper-tiny-en-fp32",
-                displayName = "Whisper tiny.en FP32 (~220 MB)",
+                displayName = "Whisper tiny.en FP32",
                 fileName = "whisper_tiny_en_fp32.pte",
-                downloadUrl = "", // TODO: Set download URL when model is hosted
-                sizeBytes = 220_000_000L,
+                downloadUrl = "https://github.com/leonbubova/hush-app-models/releases/download/v0.1.0/whisper_tiny_en_fp32.pte",
+                sizeBytes = 230_960_384L,
             ),
         )
 

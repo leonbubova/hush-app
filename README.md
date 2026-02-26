@@ -111,8 +111,10 @@ transcription/
   VoxtralProvider       — Mistral Voxtral API client
   OpenAiWhisperProvider — OpenAI Whisper API client
   GroqProvider          — Groq API client (OpenAI-compatible)
-  LocalProvider         — on-device inference via ExecuTorch
+  LocalProvider         — on-device inference via ExecuTorch (encoder-decoder pipeline)
   AudioConverter        — M4A/AAC → 16kHz mono float PCM conversion
+  MelSpectrogram        — 80-channel log-mel spectrogram (N_FFT=400, hop=160, 3000 frames)
+  WhisperTokenizer      — BPE token ID → text decoding (50k vocab from assets)
   ModelManager          — model download, storage, and lifecycle management
 ```
 
@@ -236,6 +238,8 @@ See [`notes/PLAN-model-export.md`](notes/PLAN-model-export.md) for the full expo
 | `LocalProviderTest` | 6 | Model not downloaded errors, metadata, requiresNetwork=false |
 | `ModelManagerTest` | 10 | Model status, file paths, download/delete, available models |
 | `UsageRepositoryTest` | 8 | Record/load/clear, MAX_SESSIONS cap, malformed JSON |
+| `MelSpectrogramTest` | 12 | Output shape, Hann window, mel filterbank, sine wave energy, log scaling |
+| `WhisperTokenizerTest` | 12 | BPE decoding, EOS/special token filtering, vocab loading, known phrases |
 
 ### E2E instrumented tests (emulator needed)
 
