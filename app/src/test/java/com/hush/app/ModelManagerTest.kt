@@ -93,6 +93,79 @@ class ModelManagerTest {
     }
 
     @Test
+    fun `cleanOrphanedModels deletes orphaned pte files`() {
+        val modelsDir = manager.getModelsDir()
+        modelsDir.mkdirs()
+        val orphaned = File(modelsDir, "old_model_v1.pte")
+        orphaned.writeText("old data")
+        assertTrue(orphaned.exists())
+
+        manager.cleanOrphanedModels()
+
+        assertFalse(orphaned.exists())
+    }
+
+    @Test
+    fun `cleanOrphanedModels keeps valid model files`() {
+        val modelsDir = manager.getModelsDir()
+        modelsDir.mkdirs()
+        val validFile = File(modelsDir, q4FileName)
+        validFile.writeText("model data")
+
+        manager.cleanOrphanedModels()
+
+        assertTrue(validFile.exists())
+        validFile.delete()
+    }
+
+    @Test
+    fun `cleanOrphanedModels deletes orphaned tmp files`() {
+        val modelsDir = manager.getModelsDir()
+        modelsDir.mkdirs()
+        val orphanedTmp = File(modelsDir, "old_model_v1.pte.tmp")
+        orphanedTmp.writeText("partial download")
+
+        manager.cleanOrphanedModels()
+
+        assertFalse(orphanedTmp.exists())
+    }
+
+    @Test
+    fun `cleanOrphanedModels keeps valid tmp files for in-progress downloads`() {
+        val modelsDir = manager.getModelsDir()
+        modelsDir.mkdirs()
+        val validTmp = File(modelsDir, "${q4FileName}.tmp")
+        validTmp.writeText("downloading")
+
+        manager.cleanOrphanedModels()
+
+        assertTrue(validTmp.exists())
+        validTmp.delete()
+    }
+
+    @Test
+    fun `cleanOrphanedModels leaves non-pte non-tmp files alone`() {
+        val modelsDir = manager.getModelsDir()
+        modelsDir.mkdirs()
+        val unknownFile = File(modelsDir, "readme.txt")
+        unknownFile.writeText("notes")
+
+        manager.cleanOrphanedModels()
+
+        assertTrue(unknownFile.exists())
+        unknownFile.delete()
+    }
+
+    @Test
+    fun `cleanOrphanedModels handles missing models directory`() {
+        val modelsDir = manager.getModelsDir()
+        if (modelsDir.exists()) modelsDir.deleteRecursively()
+
+        // Should not throw
+        manager.cleanOrphanedModels()
+    }
+
+    @Test
     fun `refreshStatuses updates status to READY when file exists`() {
         val modelsDir = manager.getModelsDir()
         modelsDir.mkdirs()

@@ -83,11 +83,30 @@ class ModelManager(private val context: Context) {
     }
 
     fun refreshStatuses() {
+        cleanOrphanedModels()
         val map = mutableMapOf<String, ModelStatus>()
         for (model in AVAILABLE_MODELS) {
             map[model.id] = if (getModelFile(model).exists()) ModelStatus.READY else ModelStatus.NOT_DOWNLOADED
         }
         _statuses.value = map
+    }
+
+    internal fun cleanOrphanedModels() {
+        val modelsDir = getModelsDir()
+        if (!modelsDir.exists()) return
+
+        val allowedNames = AVAILABLE_MODELS.flatMap { listOf(it.fileName, "${it.fileName}.tmp") }.toSet()
+
+        modelsDir.listFiles()?.forEach { file ->
+            if (file.name in allowedNames) return@forEach
+            if (file.name.endsWith(".pte") || file.name.endsWith(".tmp")) {
+                val sizeMb = file.length() / (1024 * 1024)
+                Log.i(TAG, "Deleting orphaned model file: ${file.name} (${sizeMb} MB)")
+                file.delete()
+            } else {
+                Log.i(TAG, "Skipping unexpected file in models dir: ${file.name}")
+            }
+        }
     }
 
     fun getModelStatus(modelId: String): ModelStatus {
