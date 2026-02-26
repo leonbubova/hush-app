@@ -83,8 +83,10 @@ class NavigationTest {
         ComposeTestHelpers.dismissAnrIfPresent()
         composeRule.waitForIdle()
         composeRule.navigateTo(MainViewModel.AppScreen.SETTINGS)
-        // Drawer should be closed — drawer items should not be visible
-        composeRule.onNodeWithTag(TestTags.DRAWER_HOME).assertDoesNotExist()
+        // Drawer content stays in the tree but should not be visible when closed
+        composeRule.onNodeWithTag(TestTags.SETTINGS_SCREEN).assertIsDisplayed()
+        // The drawer_menu_button on Settings screen should be visible (not behind drawer)
+        composeRule.onNodeWithTag(TestTags.DRAWER_MENU_BUTTON).assertIsDisplayed()
     }
 
     @Test

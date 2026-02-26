@@ -44,7 +44,10 @@ fun SettingsScreen(
         topBar = {
             TopAppBar(
                 navigationIcon = {
-                    IconButton(onClick = onOpenDrawer) {
+                    IconButton(
+                        onClick = onOpenDrawer,
+                        modifier = Modifier.testTag(TestTags.DRAWER_MENU_BUTTON),
+                    ) {
                         Text("\u2630", fontSize = 20.sp, color = Color.White.copy(alpha = 0.7f))
                     }
                 },
