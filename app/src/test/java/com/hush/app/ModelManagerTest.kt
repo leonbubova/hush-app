@@ -14,6 +14,7 @@ import java.io.File
 class ModelManagerTest {
 
     private lateinit var manager: ModelManager
+    private val q4FileName = ModelManager.getModelInfo("whisper-tiny-en-q4")!!.fileName
 
     @Before
     fun setUp() {
@@ -42,12 +43,12 @@ class ModelManagerTest {
         // Create the model file manually
         val modelsDir = manager.getModelsDir()
         modelsDir.mkdirs()
-        val modelFile = File(modelsDir, "whisper_tiny_en_q4_v2.pte")
+        val modelFile = File(modelsDir, q4FileName)
         modelFile.writeText("fake model data")
 
         val path = manager.getModelPath("whisper-tiny-en-q4")
         assertNotNull(path)
-        assertTrue(path!!.endsWith("whisper_tiny_en_q4_v2.pte"))
+        assertTrue(path!!.endsWith(q4FileName))
 
         modelFile.delete()
     }
@@ -56,7 +57,7 @@ class ModelManagerTest {
     fun `deleteModel removes model file`() {
         val modelsDir = manager.getModelsDir()
         modelsDir.mkdirs()
-        val modelFile = File(modelsDir, "whisper_tiny_en_q4_v2.pte")
+        val modelFile = File(modelsDir, q4FileName)
         modelFile.writeText("fake model data")
         assertTrue(modelFile.exists())
 
@@ -95,7 +96,7 @@ class ModelManagerTest {
     fun `refreshStatuses updates status to READY when file exists`() {
         val modelsDir = manager.getModelsDir()
         modelsDir.mkdirs()
-        val modelFile = File(modelsDir, "whisper_tiny_en_q4_v2.pte")
+        val modelFile = File(modelsDir, q4FileName)
         modelFile.writeText("fake model data")
 
         manager.refreshStatuses()

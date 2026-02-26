@@ -16,10 +16,18 @@ import java.util.concurrent.TimeUnit
 data class ModelInfo(
     val id: String,
     val displayName: String,
-    val fileName: String,
     val downloadUrl: String,
     val sizeBytes: Long,
-)
+) {
+    val fileName: String
+        get() {
+            val segments = downloadUrl.trimEnd('/').split('/')
+            val file = segments.last()
+            val version = segments.getOrNull(segments.size - 2)
+                ?.takeIf { it.startsWith("v") }
+            return if (version != null) "${version}_$file" else file
+        }
+}
 
 enum class ModelStatus {
     NOT_DOWNLOADED,
@@ -38,21 +46,18 @@ class ModelManager(private val context: Context) {
             ModelInfo(
                 id = "whisper-tiny-en-q4",
                 displayName = "Whisper tiny.en INT4 (132 MB)",
-                fileName = "whisper_tiny_en_q4_v2.pte",
                 downloadUrl = "https://github.com/leonbubova/hush-app-models/releases/download/v0.2.0/whisper_tiny_en_q4.pte",
                 sizeBytes = 138_482_176L,
             ),
             ModelInfo(
                 id = "whisper-tiny-en-q8",
                 displayName = "Whisper tiny.en INT8 (136 MB)",
-                fileName = "whisper_tiny_en_q8_v2.pte",
                 downloadUrl = "https://github.com/leonbubova/hush-app-models/releases/download/v0.2.0/whisper_tiny_en_q8.pte",
                 sizeBytes = 142_690_304L,
             ),
             ModelInfo(
                 id = "whisper-tiny-en-fp32",
                 displayName = "Whisper tiny.en FP32 (220 MB)",
-                fileName = "whisper_tiny_en_fp32_v2.pte",
                 downloadUrl = "https://github.com/leonbubova/hush-app-models/releases/download/v0.2.0/whisper_tiny_en_fp32.pte",
                 sizeBytes = 230_960_384L,
             ),
