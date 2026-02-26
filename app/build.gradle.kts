@@ -49,6 +49,9 @@ android {
     }
 
     buildTypes {
+        debug {
+            applicationIdSuffix = ".debug"
+        }
         release {
             isMinifyEnabled = false
             signingConfig = signingConfigs.getByName("release")
@@ -62,6 +65,12 @@ android {
 
     kotlinOptions {
         jvmTarget = "17"
+    }
+
+    packaging {
+        jniLibs {
+            pickFirsts += listOf("**/libc++_shared.so")
+        }
     }
 
     testOptions {
@@ -93,6 +102,11 @@ dependencies {
 
     // OkHttp for API calls
     implementation("com.squareup.okhttp3:okhttp:4.12.0")
+
+    // ExecuTorch for on-device ML inference
+    implementation("org.pytorch:executorch-android:0.6.0")
+    implementation("com.facebook.soloader:soloader:0.10.5")
+    implementation("com.facebook.fbjni:fbjni:0.7.0")
 
     // JSON parsing
     implementation("org.json:json:20231013")
