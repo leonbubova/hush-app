@@ -104,6 +104,32 @@ class ProviderConfigTest {
         assertEquals("", config.language)
     }
 
+    // --- Moonshine round-trip ---
+
+    @Test
+    fun `Moonshine config round-trips through JSON`() {
+        val original = ProviderConfig.Moonshine(
+            model = "tiny-streaming-en",
+        )
+        val json = original.toJson()
+        val restored = ProviderConfig.fromJson(ProviderConfig.PROVIDER_MOONSHINE, json)
+
+        assertEquals(original, restored)
+    }
+
+    @Test
+    fun `Moonshine default has sensible values`() {
+        val config = ProviderConfig.default(ProviderConfig.PROVIDER_MOONSHINE) as ProviderConfig.Moonshine
+        assertEquals("tiny-streaming-en", config.model)
+    }
+
+    @Test
+    fun `Moonshine toJson includes model`() {
+        val config = ProviderConfig.Moonshine(model = "tiny-streaming-en")
+        val json = config.toJson()
+        assertEquals("tiny-streaming-en", json.getString("model"))
+    }
+
     // --- Edge cases ---
 
     @Test
@@ -137,8 +163,9 @@ class ProviderConfigTest {
             ProviderConfig.PROVIDER_OPENAI,
             ProviderConfig.PROVIDER_GROQ,
             ProviderConfig.PROVIDER_LOCAL,
+            ProviderConfig.PROVIDER_MOONSHINE,
         )
-        assertEquals(4, ids.size)
+        assertEquals(5, ids.size)
     }
 
     @Test

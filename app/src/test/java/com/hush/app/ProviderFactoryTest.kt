@@ -56,12 +56,14 @@ class ProviderFactoryTest {
     }
 
     @Test
-    fun `allProviderIds contains all providers including local`() {
+    fun `allProviderIds contains all providers including local and moonshine`() {
         val ids = ProviderFactory.allProviderIds
         assertTrue(ids.contains(ProviderConfig.PROVIDER_VOXTRAL))
         assertTrue(ids.contains(ProviderConfig.PROVIDER_OPENAI))
         assertTrue(ids.contains(ProviderConfig.PROVIDER_GROQ))
         assertTrue(ids.contains(ProviderConfig.PROVIDER_LOCAL))
+        assertTrue(ids.contains(ProviderConfig.PROVIDER_MOONSHINE))
+        assertEquals(5, ids.size)
     }
 
     @Test
@@ -70,6 +72,7 @@ class ProviderFactoryTest {
         assertEquals("OpenAI Whisper", ProviderFactory.displayName(ProviderConfig.PROVIDER_OPENAI))
         assertEquals("Groq", ProviderFactory.displayName(ProviderConfig.PROVIDER_GROQ))
         assertEquals("Local (On-Device)", ProviderFactory.displayName(ProviderConfig.PROVIDER_LOCAL))
+        assertEquals("Moonshine (Streaming)", ProviderFactory.displayName(ProviderConfig.PROVIDER_MOONSHINE))
     }
 
     @Test

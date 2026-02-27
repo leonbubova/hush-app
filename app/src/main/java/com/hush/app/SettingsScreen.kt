@@ -174,6 +174,14 @@ private fun ProviderConfigPanel(
             onDownloadModel = onDownloadModel,
             onDeleteModel = onDeleteModel,
         )
+        is ProviderConfig.Moonshine -> MoonshineConfigPanel(
+            config = config,
+            onSave = onSave,
+            modelStatuses = modelStatuses,
+            modelDownloadProgress = modelDownloadProgress,
+            onDownloadModel = onDownloadModel,
+            onDeleteModel = onDeleteModel,
+        )
     }
 }
 
@@ -417,6 +425,130 @@ private fun LocalConfigPanel(
         SaveButton(
             enabled = model != config.model || language != config.language,
             onClick = { onSave(config.copy(model = model, language = language.trim())) },
+        )
+    }
+}
+
+@Composable
+private fun MoonshineConfigPanel(
+    config: ProviderConfig.Moonshine,
+    onSave: (ProviderConfig) -> Unit,
+    modelStatuses: Map<String, ModelStatus>,
+    modelDownloadProgress: Map<String, Float>,
+    onDownloadModel: (String) -> Unit,
+    onDeleteModel: (String) -> Unit,
+) {
+    var model by remember(config) { mutableStateOf(config.model) }
+
+    val selectedModelInfo = ModelManager.getMoonshineModelInfo(model)
+    val modelStatus = modelStatuses[model] ?: ModelStatus.NOT_DOWNLOADED
+    val progress = modelDownloadProgress[model] ?: 0f
+
+    ConfigSection(title = "Moonshine Configuration") {
+        Text(
+            "No API key needed. Streams on device.",
+            fontSize = 13.sp,
+            color = Color(0xFF6C63FF).copy(alpha = 0.8f),
+            modifier = Modifier.padding(bottom = 12.dp),
+        )
+
+        // Model selector
+        ModelDropdown(
+            selected = model,
+            options = ModelManager.AVAILABLE_MOONSHINE_MODELS.map { it.id },
+            onSelect = { model = it },
+        )
+
+        Spacer(Modifier.height(12.dp))
+
+        // Model status + download/delete
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(12.dp),
+            colors = CardDefaults.cardColors(containerColor = Color.White.copy(alpha = 0.04f)),
+        ) {
+            Column(modifier = Modifier.padding(12.dp)) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            selectedModelInfo?.displayName ?: model,
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.Medium,
+                            color = Color.White.copy(alpha = 0.9f),
+                        )
+                        Text(
+                            when (modelStatus) {
+                                ModelStatus.NOT_DOWNLOADED -> "Not downloaded (${formatSize(selectedModelInfo?.totalSizeBytes ?: 0)})"
+                                ModelStatus.DOWNLOADING -> "Downloading... ${(progress * 100).toInt()}%"
+                                ModelStatus.READY -> "Ready"
+                                ModelStatus.ERROR -> "Download failed"
+                            },
+                            fontSize = 12.sp,
+                            color = when (modelStatus) {
+                                ModelStatus.READY -> Color(0xFF4CAF50)
+                                ModelStatus.ERROR -> Color(0xFFEF5350)
+                                ModelStatus.DOWNLOADING -> Color(0xFF6C63FF)
+                                else -> Color.White.copy(alpha = 0.5f)
+                            },
+                        )
+                    }
+
+                    when (modelStatus) {
+                        ModelStatus.NOT_DOWNLOADED, ModelStatus.ERROR -> {
+                            Button(
+                                onClick = { onDownloadModel(model) },
+                                shape = RoundedCornerShape(8.dp),
+                                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF6C63FF)),
+                                contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
+                                modifier = Modifier.testTag(TestTags.MODEL_DOWNLOAD_BUTTON),
+                            ) {
+                                Text("Download", fontSize = 13.sp)
+                            }
+                        }
+                        ModelStatus.DOWNLOADING -> {
+                            CircularProgressIndicator(
+                                progress = { progress },
+                                modifier = Modifier.size(32.dp),
+                                color = Color(0xFF6C63FF),
+                                trackColor = Color.White.copy(alpha = 0.1f),
+                                strokeWidth = 3.dp,
+                            )
+                        }
+                        ModelStatus.READY -> {
+                            TextButton(
+                                onClick = { onDeleteModel(model) },
+                                modifier = Modifier.testTag(TestTags.MODEL_DELETE_BUTTON),
+                            ) {
+                                Text("Delete", color = Color(0xFFEF5350), fontSize = 13.sp)
+                            }
+                        }
+                    }
+                }
+
+                if (modelStatus == ModelStatus.DOWNLOADING) {
+                    Spacer(Modifier.height(8.dp))
+                    LinearProgressIndicator(
+                        progress = { progress },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(4.dp)
+                            .clip(RoundedCornerShape(2.dp)),
+                        color = Color(0xFF6C63FF),
+                        trackColor = Color.White.copy(alpha = 0.1f),
+                    )
+                }
+            }
+        }
+
+        Spacer(Modifier.height(16.dp))
+
+        SaveButton(
+            enabled = model != config.model,
+            onClick = { onSave(config.copy(model = model)) },
         )
     }
 }

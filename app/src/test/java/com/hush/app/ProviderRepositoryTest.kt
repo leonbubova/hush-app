@@ -76,13 +76,14 @@ class ProviderRepositoryTest {
     }
 
     @Test
-    fun `getAllConfigs returns configs for all 4 providers`() {
+    fun `getAllConfigs returns configs for all 5 providers`() {
         val configs = ProviderRepository.getAllConfigs(context)
-        assertEquals(4, configs.size)
+        assertEquals(5, configs.size)
         assertTrue(configs[ProviderConfig.PROVIDER_VOXTRAL] is ProviderConfig.Voxtral)
         assertTrue(configs[ProviderConfig.PROVIDER_OPENAI] is ProviderConfig.OpenAiWhisper)
         assertTrue(configs[ProviderConfig.PROVIDER_GROQ] is ProviderConfig.Groq)
         assertTrue(configs[ProviderConfig.PROVIDER_LOCAL] is ProviderConfig.Local)
+        assertTrue(configs[ProviderConfig.PROVIDER_MOONSHINE] is ProviderConfig.Moonshine)
     }
 
     @Test
@@ -118,13 +119,14 @@ class ProviderRepositoryTest {
     }
 
     @Test
-    fun `allProviderIds contains all 4 providers`() {
+    fun `allProviderIds contains all 5 providers`() {
         val ids = ProviderRepository.allProviderIds
-        assertEquals(4, ids.size)
+        assertEquals(5, ids.size)
         assertTrue(ids.contains(ProviderConfig.PROVIDER_VOXTRAL))
         assertTrue(ids.contains(ProviderConfig.PROVIDER_OPENAI))
         assertTrue(ids.contains(ProviderConfig.PROVIDER_GROQ))
         assertTrue(ids.contains(ProviderConfig.PROVIDER_LOCAL))
+        assertTrue(ids.contains(ProviderConfig.PROVIDER_MOONSHINE))
     }
 
     @Test

@@ -50,11 +50,20 @@ sealed class ProviderConfig {
         }
     }
 
+    data class Moonshine(
+        val model: String = "tiny-streaming-en",
+    ) : ProviderConfig() {
+        override fun toJson() = JSONObject().apply {
+            put("model", model)
+        }
+    }
+
     companion object {
         const val PROVIDER_VOXTRAL = "voxtral"
         const val PROVIDER_OPENAI = "openai"
         const val PROVIDER_GROQ = "groq"
         const val PROVIDER_LOCAL = "local"
+        const val PROVIDER_MOONSHINE = "moonshine"
 
         fun fromJson(providerId: String, json: JSONObject): ProviderConfig = when (providerId) {
             PROVIDER_VOXTRAL -> Voxtral(
@@ -75,6 +84,9 @@ sealed class ProviderConfig {
                 model = json.optString("model", "whisper-tiny-en-q4"),
                 language = json.optString("language", ""),
             )
+            PROVIDER_MOONSHINE -> Moonshine(
+                model = json.optString("model", "tiny-streaming-en"),
+            )
             else -> Voxtral()
         }
 
@@ -83,6 +95,7 @@ sealed class ProviderConfig {
             PROVIDER_OPENAI -> OpenAiWhisper()
             PROVIDER_GROQ -> Groq()
             PROVIDER_LOCAL -> Local()
+            PROVIDER_MOONSHINE -> Moonshine()
             else -> Voxtral()
         }
     }

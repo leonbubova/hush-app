@@ -30,6 +30,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         val dictationState: DictationService.DictationState = DictationService.DictationState.IDLE,
         val history: List<String> = emptyList(),
         val errorMessage: String = "",
+        val streamingText: String = "",
         val activeProviderId: String = ProviderConfig.PROVIDER_VOXTRAL,
         val providerConfigs: Map<String, ProviderConfig> = emptyMap(),
         val accessibilityEnabled: Boolean = false,
@@ -63,21 +64,35 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                                 dictationState = dictationState,
                                 history = updated,
                                 errorMessage = "",
+                                streamingText = "",
                                 usageSessions = UsageRepository.loadSessions(getApplication()),
                             )
                         } else {
-                            _state.value.copy(dictationState = dictationState, errorMessage = "")
+                            _state.value.copy(
+                                dictationState = dictationState,
+                                errorMessage = "",
+                                streamingText = "",
+                            )
                         }
                     }
                     DictationService.DictationState.ERROR -> _state.value.copy(
                         dictationState = dictationState,
                         errorMessage = text ?: "Something went wrong",
+                        streamingText = "",
+                    )
+                    DictationService.DictationState.STREAMING -> _state.value.copy(
+                        dictationState = dictationState,
+                        errorMessage = "",
                     )
                     else -> _state.value.copy(
                         dictationState = dictationState,
                         errorMessage = "",
+                        streamingText = "",
                     )
                 }
+            }
+            service?.onStreamingTextChanged = { text ->
+                _state.value = _state.value.copy(streamingText = text)
             }
         }
 
@@ -178,6 +193,10 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     fun toggle() {
         service?.toggle()
+    }
+
+    fun setAppForeground(foreground: Boolean) {
+        service?.isAppInForeground = foreground
     }
 
     fun setActiveProvider(id: String) {

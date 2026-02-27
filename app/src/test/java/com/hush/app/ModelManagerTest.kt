@@ -196,6 +196,87 @@ class ModelManagerTest {
         )
     }
 
+    // --- Moonshine model tests ---
+
+    @Test
+    fun `AVAILABLE_MOONSHINE_MODELS is non-empty`() {
+        assertTrue(ModelManager.AVAILABLE_MOONSHINE_MODELS.isNotEmpty())
+    }
+
+    @Test
+    fun `getMoonshineModelInfo returns info for tiny-streaming-en`() {
+        val info = ModelManager.getMoonshineModelInfo("tiny-streaming-en")
+        assertNotNull(info)
+        assertEquals("tiny-streaming-en", info!!.id)
+        assertTrue(info.components.isNotEmpty())
+        assertTrue(info.totalSizeBytes > 0)
+    }
+
+    @Test
+    fun `getMoonshineModelInfo returns null for unknown model`() {
+        assertNull(ModelManager.getMoonshineModelInfo("nonexistent"))
+    }
+
+    @Test
+    fun `getMoonshineModelStatus returns NOT_DOWNLOADED when dir missing`() {
+        assertEquals(ModelStatus.NOT_DOWNLOADED, manager.getMoonshineModelStatus("tiny-streaming-en"))
+    }
+
+    @Test
+    fun `getMoonshineModelStatus returns NOT_DOWNLOADED when incomplete`() {
+        val info = ModelManager.getMoonshineModelInfo("tiny-streaming-en")!!
+        val dir = File(manager.getModelsDir(), "moonshine/${info.dirName}")
+        dir.mkdirs()
+        // Only create one file
+        File(dir, info.components.first()).writeText("data")
+
+        assertEquals(ModelStatus.NOT_DOWNLOADED, manager.getMoonshineModelStatus("tiny-streaming-en"))
+
+        dir.deleteRecursively()
+    }
+
+    @Test
+    fun `getMoonshineModelStatus returns READY when all files present`() {
+        val info = ModelManager.getMoonshineModelInfo("tiny-streaming-en")!!
+        val dir = File(manager.getModelsDir(), "moonshine/${info.dirName}")
+        dir.mkdirs()
+        for (component in info.components) {
+            File(dir, component).writeText("data")
+        }
+
+        assertEquals(ModelStatus.READY, manager.getMoonshineModelStatus("tiny-streaming-en"))
+
+        dir.deleteRecursively()
+    }
+
+    @Test
+    fun `getMoonshineModelPath returns null when not downloaded`() {
+        assertNull(manager.getMoonshineModelPath("tiny-streaming-en"))
+    }
+
+    @Test
+    fun `getMoonshineModelPath returns path when all files present`() {
+        val info = ModelManager.getMoonshineModelInfo("tiny-streaming-en")!!
+        val dir = File(manager.getModelsDir(), "moonshine/${info.dirName}")
+        dir.mkdirs()
+        for (component in info.components) {
+            File(dir, component).writeText("data")
+        }
+
+        val path = manager.getMoonshineModelPath("tiny-streaming-en")
+        assertNotNull(path)
+        assertTrue(path!!.endsWith("tiny-streaming-en"))
+
+        dir.deleteRecursively()
+    }
+
+    @Test
+    fun `refreshStatuses includes moonshine models`() {
+        manager.refreshStatuses()
+        val statuses = manager.statuses.value
+        assertTrue(statuses.containsKey("tiny-streaming-en"))
+    }
+
     @Test
     fun `refreshStatuses updates status to READY when file exists`() {
         val modelsDir = manager.getModelsDir()

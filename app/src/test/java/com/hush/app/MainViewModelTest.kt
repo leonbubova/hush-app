@@ -85,11 +85,12 @@ class MainViewModelTest {
     @Test
     fun `init state loads provider configs for all providers`() {
         val configs = viewModel.state.value.providerConfigs
-        assertEquals(4, configs.size)
+        assertEquals(5, configs.size)
         assertTrue(configs.containsKey(ProviderConfig.PROVIDER_VOXTRAL))
         assertTrue(configs.containsKey(ProviderConfig.PROVIDER_OPENAI))
         assertTrue(configs.containsKey(ProviderConfig.PROVIDER_GROQ))
         assertTrue(configs.containsKey(ProviderConfig.PROVIDER_LOCAL))
+        assertTrue(configs.containsKey(ProviderConfig.PROVIDER_MOONSHINE))
     }
 
     @Test

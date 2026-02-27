@@ -18,7 +18,15 @@ object ProviderFactory {
             config as ProviderConfig.Local,
             context ?: throw IllegalStateException("Context required for local provider"),
         )
+        ProviderConfig.PROVIDER_MOONSHINE -> throw IllegalStateException(
+            "Moonshine is a streaming provider — use MoonshineProvider directly, not TranscriptionProvider"
+        )
         else -> VoxtralProvider(config as? ProviderConfig.Voxtral ?: ProviderConfig.Voxtral())
+    }
+
+    fun isStreaming(context: Context): Boolean {
+        val activeId = ProviderRepository.getActiveProviderId(context)
+        return activeId == ProviderConfig.PROVIDER_MOONSHINE
     }
 
     val allProviderIds: List<String> = ProviderRepository.allProviderIds
@@ -28,6 +36,7 @@ object ProviderFactory {
         ProviderConfig.PROVIDER_OPENAI -> "OpenAI Whisper"
         ProviderConfig.PROVIDER_GROQ -> "Groq"
         ProviderConfig.PROVIDER_LOCAL -> "Local (On-Device)"
+        ProviderConfig.PROVIDER_MOONSHINE -> "Moonshine (Streaming)"
         else -> providerId
     }
 }

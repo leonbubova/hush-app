@@ -137,6 +137,12 @@ class MainActivity : ComponentActivity() {
             viewModel.startServiceIfNeeded()
         }
         viewModel.refreshAccessibilityStatus()
+        viewModel.setAppForeground(true)
+    }
+
+    override fun onPause() {
+        super.onPause()
+        viewModel.setAppForeground(false)
     }
 
     override fun onKeyDown(keyCode: Int, event: KeyEvent?): Boolean {
@@ -179,11 +185,13 @@ fun HushScreen(
     onOpenDrawer: () -> Unit = {},
 ) {
     val isRecording = state.dictationState == DictationService.DictationState.RECORDING
+    val isStreaming = state.dictationState == DictationService.DictationState.STREAMING
+    val isActive = isRecording || isStreaming
     val isProcessing = state.dictationState == DictationService.DictationState.PROCESSING
 
     val bgColor by animateColorAsState(
         targetValue = when {
-            isRecording -> Color(0xFF1A1A2E)
+            isActive -> Color(0xFF1A1A2E)
             else -> Color(0xFF0D0D1A)
         },
         animationSpec = tween(500),
@@ -224,7 +232,7 @@ fun HushScreen(
                 modifier = Modifier.fillMaxSize(),
                 contentAlignment = Alignment.Center,
             ) {
-                AnimatedBlobs(isRecording = isRecording)
+                AnimatedBlobs(isRecording = isActive)
             }
 
             // Content on top
@@ -243,6 +251,7 @@ fun HushScreen(
                     text = when (state.dictationState) {
                         DictationService.DictationState.IDLE -> "Ready"
                         DictationService.DictationState.RECORDING -> "Listening..."
+                        DictationService.DictationState.STREAMING -> "Streaming..."
                         DictationService.DictationState.PROCESSING -> "Transcribing..."
                         DictationService.DictationState.DONE -> "Copied!"
                         DictationService.DictationState.ERROR -> "Error"
@@ -260,6 +269,7 @@ fun HushScreen(
                     text = when (state.dictationState) {
                         DictationService.DictationState.IDLE -> "Double-tap volume down or tap the circle"
                         DictationService.DictationState.RECORDING -> "Speak now — double-tap volume to stop"
+                        DictationService.DictationState.STREAMING -> "Speak now — text appears live"
                         DictationService.DictationState.PROCESSING -> "Decoding your yapping..."
                         DictationService.DictationState.DONE -> "Text copied to clipboard"
                         DictationService.DictationState.ERROR -> state.errorMessage.ifBlank { "Something went wrong" }
@@ -283,10 +293,30 @@ fun HushScreen(
                 contentAlignment = Alignment.Center,
             ) {
                 MicButton(
-                    isRecording = isRecording,
+                    isRecording = isActive,
                     isProcessing = isProcessing,
                     onClick = onToggle,
                 )
+            }
+
+            // Live streaming text
+            if (isStreaming && state.streamingText.isNotBlank()) {
+                Spacer(Modifier.height(8.dp))
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(16.dp),
+                    colors = CardDefaults.cardColors(
+                        containerColor = Color(0xFF6C63FF).copy(alpha = 0.15f)
+                    ),
+                ) {
+                    Text(
+                        state.streamingText,
+                        fontSize = 15.sp,
+                        color = Color.White.copy(alpha = 0.9f),
+                        lineHeight = 22.sp,
+                        modifier = Modifier.padding(14.dp),
+                    )
+                }
             }
 
             Spacer(Modifier.height(8.dp))

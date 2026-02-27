@@ -31,6 +31,16 @@ data class ModelInfo(
         }
 }
 
+data class MoonshineModelInfo(
+    val id: String,
+    val displayName: String,
+    val baseUrl: String,
+    val components: List<String>,
+    val totalSizeBytes: Long,
+) {
+    val dirName: String get() = id
+}
+
 enum class ModelStatus {
     NOT_DOWNLOADED,
     DOWNLOADING,
@@ -43,6 +53,7 @@ class ModelManager(private val context: Context) {
     companion object {
         private const val TAG = "ModelManager"
         private const val MODELS_DIR = "models"
+        private const val MOONSHINE_DIR = "moonshine"
 
         val AVAILABLE_MODELS = listOf(
             ModelInfo(
@@ -68,8 +79,29 @@ class ModelManager(private val context: Context) {
             ),
         )
 
+        val AVAILABLE_MOONSHINE_MODELS = listOf(
+            MoonshineModelInfo(
+                id = "tiny-streaming-en",
+                displayName = "Moonshine tiny (English, ~26 MB)",
+                baseUrl = "https://download.moonshine.ai/model/tiny-streaming-en/quantized",
+                components = listOf(
+                    "adapter.ort",
+                    "cross_kv.ort",
+                    "decoder_kv.ort",
+                    "encoder.ort",
+                    "frontend.ort",
+                    "streaming_config.json",
+                    "tokenizer.bin",
+                ),
+                totalSizeBytes = 27_262_976L,
+            ),
+        )
+
         fun getModelInfo(modelId: String): ModelInfo? =
             AVAILABLE_MODELS.find { it.id == modelId }
+
+        fun getMoonshineModelInfo(modelId: String): MoonshineModelInfo? =
+            AVAILABLE_MOONSHINE_MODELS.find { it.id == modelId }
     }
 
     private val _statuses = MutableStateFlow<Map<String, ModelStatus>>(emptyMap())
@@ -93,6 +125,9 @@ class ModelManager(private val context: Context) {
         for (model in AVAILABLE_MODELS) {
             map[model.id] = if (getModelFile(model).exists()) ModelStatus.READY else ModelStatus.NOT_DOWNLOADED
         }
+        for (model in AVAILABLE_MOONSHINE_MODELS) {
+            map[model.id] = getMoonshineModelStatus(model.id)
+        }
         _statuses.value = map
     }
 
@@ -103,6 +138,7 @@ class ModelManager(private val context: Context) {
         val allowedNames = AVAILABLE_MODELS.flatMap { listOf(it.fileName, "${it.fileName}.tmp") }.toSet()
 
         modelsDir.listFiles()?.forEach { file ->
+            if (file.isDirectory) return@forEach // skip moonshine subdirectory
             if (file.name in allowedNames) return@forEach
             if (file.name.endsWith(".pte") || file.name.endsWith(".tmp")) {
                 val sizeMb = file.length() / (1024 * 1024)
@@ -115,8 +151,21 @@ class ModelManager(private val context: Context) {
     }
 
     fun getModelStatus(modelId: String): ModelStatus {
-        val info = getModelInfo(modelId) ?: return ModelStatus.NOT_DOWNLOADED
-        return if (getModelFile(info).exists()) ModelStatus.READY else ModelStatus.NOT_DOWNLOADED
+        // Check whisper models
+        val info = getModelInfo(modelId)
+        if (info != null) {
+            return if (getModelFile(info).exists()) ModelStatus.READY else ModelStatus.NOT_DOWNLOADED
+        }
+        // Check moonshine models
+        return getMoonshineModelStatus(modelId)
+    }
+
+    fun getMoonshineModelStatus(modelId: String): ModelStatus {
+        val info = getMoonshineModelInfo(modelId) ?: return ModelStatus.NOT_DOWNLOADED
+        val dir = getMoonshineModelDir(info)
+        if (!dir.exists()) return ModelStatus.NOT_DOWNLOADED
+        val allPresent = info.components.all { File(dir, it).exists() }
+        return if (allPresent) ModelStatus.READY else ModelStatus.NOT_DOWNLOADED
     }
 
     fun getModelPath(modelId: String): String? {
@@ -125,7 +174,19 @@ class ModelManager(private val context: Context) {
         return if (file.exists()) file.absolutePath else null
     }
 
+    fun getMoonshineModelPath(modelId: String): String? {
+        val info = getMoonshineModelInfo(modelId) ?: return null
+        val dir = getMoonshineModelDir(info)
+        val allPresent = info.components.all { File(dir, it).exists() }
+        return if (allPresent) dir.absolutePath else null
+    }
+
     suspend fun downloadModel(modelId: String): Result<Unit> = withContext(Dispatchers.IO) {
+        // Check if it's a moonshine model first
+        if (getMoonshineModelInfo(modelId) != null) {
+            return@withContext downloadMoonshineModel(modelId)
+        }
+
         val info = getModelInfo(modelId)
             ?: return@withContext Result.failure(IllegalArgumentException("Unknown model: $modelId"))
 
@@ -202,18 +263,91 @@ class ModelManager(private val context: Context) {
         }
     }
 
-    fun deleteModel(modelId: String) {
-        val info = getModelInfo(modelId) ?: return
-        val file = getModelFile(info)
-        if (file.exists()) {
-            file.delete()
-        }
-        updateStatus(modelId, ModelStatus.NOT_DOWNLOADED)
+    private suspend fun downloadMoonshineModel(modelId: String): Result<Unit> {
+        val info = getMoonshineModelInfo(modelId)
+            ?: return Result.failure(IllegalArgumentException("Unknown moonshine model: $modelId"))
+
+        updateStatus(modelId, ModelStatus.DOWNLOADING)
         updateProgress(modelId, 0f)
+
+        val dir = getMoonshineModelDir(info)
+        dir.mkdirs()
+
+        return try {
+            val totalComponents = info.components.size
+            for ((index, component) in info.components.withIndex()) {
+                val url = "${info.baseUrl}/$component"
+                val request = Request.Builder().url(url).build()
+                val response = client.newCall(request).execute()
+
+                if (!response.isSuccessful) {
+                    updateStatus(modelId, ModelStatus.ERROR)
+                    return Result.failure(
+                        RuntimeException("Download failed for $component: HTTP ${response.code}")
+                    )
+                }
+
+                val body = response.body ?: run {
+                    updateStatus(modelId, ModelStatus.ERROR)
+                    return Result.failure(RuntimeException("Empty response body for $component"))
+                }
+
+                val targetFile = File(dir, component)
+                val tempFile = File(dir, "$component.tmp")
+
+                FileOutputStream(tempFile).use { output ->
+                    body.byteStream().use { input ->
+                        val buffer = ByteArray(8192)
+                        while (true) {
+                            val read = input.read(buffer)
+                            if (read == -1) break
+                            output.write(buffer, 0, read)
+                        }
+                    }
+                }
+
+                tempFile.renameTo(targetFile)
+                updateProgress(modelId, (index + 1).toFloat() / totalComponents)
+                Log.i(TAG, "Downloaded moonshine component: $component")
+            }
+
+            updateStatus(modelId, ModelStatus.READY)
+            updateProgress(modelId, 1f)
+            Log.i(TAG, "Moonshine model $modelId download complete")
+            Result.success(Unit)
+        } catch (e: Exception) {
+            updateStatus(modelId, ModelStatus.ERROR)
+            Log.e(TAG, "Failed to download moonshine model $modelId", e)
+            Result.failure(e)
+        }
+    }
+
+    fun deleteModel(modelId: String) {
+        // Check whisper models
+        val info = getModelInfo(modelId)
+        if (info != null) {
+            val file = getModelFile(info)
+            if (file.exists()) file.delete()
+            updateStatus(modelId, ModelStatus.NOT_DOWNLOADED)
+            updateProgress(modelId, 0f)
+            return
+        }
+
+        // Check moonshine models
+        val moonInfo = getMoonshineModelInfo(modelId)
+        if (moonInfo != null) {
+            val dir = getMoonshineModelDir(moonInfo)
+            if (dir.exists()) dir.deleteRecursively()
+            updateStatus(modelId, ModelStatus.NOT_DOWNLOADED)
+            updateProgress(modelId, 0f)
+        }
     }
 
     private fun getModelFile(info: ModelInfo): File =
         File(context.filesDir, "$MODELS_DIR/${info.fileName}")
+
+    private fun getMoonshineModelDir(info: MoonshineModelInfo): File =
+        File(context.filesDir, "$MODELS_DIR/$MOONSHINE_DIR/${info.dirName}")
 
     internal fun getModelsDir(): File = File(context.filesDir, MODELS_DIR)
 

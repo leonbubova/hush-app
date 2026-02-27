@@ -19,23 +19,45 @@ class HushAccessibilityService : AccessibilityService() {
     }
 
     private var lastVolumeDownTime = 0L
+    private lateinit var overlayManager: StreamingOverlayManager
+
+    private val overlayReceiver = object : BroadcastReceiver() {
+        override fun onReceive(context: Context?, intent: Intent?) {
+            when (intent?.action) {
+                DictationService.ACTION_OVERLAY_SHOW -> {
+                    val text = intent.getStringExtra(DictationService.EXTRA_OVERLAY_TEXT) ?: return
+                    overlayManager.show(text)
+                }
+                DictationService.ACTION_OVERLAY_DISMISS -> {
+                    overlayManager.dismiss()
+                }
+            }
+        }
+    }
 
     private val injectReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent?) {
             val focused = rootInActiveWindow?.findFocus(AccessibilityNodeInfo.FOCUS_INPUT)
-            if (focused != null) {
-                focused.performAction(AccessibilityNodeInfo.ACTION_PASTE)
-                Log.i(TAG, "Pasted transcription into focused text field")
-            } else {
+            if (focused == null) {
                 Log.i(TAG, "No focused text field — text remains on clipboard")
+                return
             }
+            focused.performAction(AccessibilityNodeInfo.ACTION_PASTE)
+            Log.i(TAG, "Pasted transcription")
         }
     }
 
     override fun onServiceConnected() {
         super.onServiceConnected()
+        overlayManager = StreamingOverlayManager(this)
+
+        val overlayFilter = IntentFilter().apply {
+            addAction(DictationService.ACTION_OVERLAY_SHOW)
+            addAction(DictationService.ACTION_OVERLAY_DISMISS)
+        }
+        registerReceiver(overlayReceiver, overlayFilter, Context.RECEIVER_NOT_EXPORTED)
         registerReceiver(injectReceiver, IntentFilter(ACTION_INJECT_TEXT), Context.RECEIVER_NOT_EXPORTED)
-        Log.i(TAG, "Registered inject text broadcast receiver")
+        Log.i(TAG, "Registered overlay and inject broadcast receivers")
     }
 
     override fun onKeyEvent(event: KeyEvent): Boolean {
@@ -48,11 +70,11 @@ class HushAccessibilityService : AccessibilityService() {
                     action = DictationService.ACTION_TOGGLE
                 }
                 startForegroundService(intent)
-                return true // consume the key event
+                return true
             }
             lastVolumeDownTime = now
         }
-        return false // let the system handle it normally
+        return false
     }
 
     override fun onAccessibilityEvent(event: AccessibilityEvent?) {
@@ -64,6 +86,8 @@ class HushAccessibilityService : AccessibilityService() {
     }
 
     override fun onDestroy() {
+        overlayManager.dismiss()
+        unregisterReceiver(overlayReceiver)
         unregisterReceiver(injectReceiver)
         super.onDestroy()
     }

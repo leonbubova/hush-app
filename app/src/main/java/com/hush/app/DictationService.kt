@@ -7,9 +7,14 @@ import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Intent
 import android.os.Binder
+import android.os.Handler
 import android.os.IBinder
+import android.os.Looper
 import android.util.Log
 import androidx.core.app.NotificationCompat
+import com.hush.app.transcription.ModelManager
+import com.hush.app.transcription.MoonshineProvider
+import com.hush.app.transcription.ProviderConfig
 import com.hush.app.transcription.ProviderFactory
 import com.hush.app.transcription.TranscribeResult
 import kotlinx.coroutines.*
@@ -19,6 +24,9 @@ class DictationService : Service() {
     companion object {
         private const val TAG = "DictationService"
         const val ACTION_TOGGLE = "com.hush.TOGGLE"
+        const val ACTION_OVERLAY_SHOW = "com.hush.ACTION_OVERLAY_SHOW"
+        const val ACTION_OVERLAY_DISMISS = "com.hush.ACTION_OVERLAY_DISMISS"
+        const val EXTRA_OVERLAY_TEXT = "com.hush.EXTRA_OVERLAY_TEXT"
         const val NOTIF_ID = 1
     }
 
@@ -30,14 +38,24 @@ class DictationService : Service() {
     private val scope = CoroutineScope(Dispatchers.IO + SupervisorJob())
     private var audioRecorder: AudioRecorder? = null
     private var isRecording = false
+    private var isStreaming = false
     private var isForegroundStarted = false
     private var recordingStartMs: Long = 0L
     private var autoStopJob: Job? = null
 
+    // Streaming state
+    private val mainHandler = Handler(Looper.getMainLooper())
+    private var moonshineProvider: MoonshineProvider? = null
+    private val accumulatedText = StringBuilder()
+    private var streamingToExternalApp = false
+
+    var isAppInForeground = false
+
     var onStateChanged: ((DictationState, String?) -> Unit)? = null
+    var onStreamingTextChanged: ((String) -> Unit)? = null
 
     enum class DictationState {
-        IDLE, RECORDING, PROCESSING, DONE, ERROR
+        IDLE, RECORDING, STREAMING, PROCESSING, DONE, ERROR
     }
 
     override fun onBind(intent: Intent?): IBinder = binder
@@ -59,8 +77,18 @@ class DictationService : Service() {
     }
 
     fun toggle() {
-        if (isRecording) stopRecording() else startRecording()
+        if (isStreaming) {
+            stopStreaming()
+        } else if (isRecording) {
+            stopRecording()
+        } else if (ProviderFactory.isStreaming(this)) {
+            startStreaming()
+        } else {
+            startRecording()
+        }
     }
+
+    // --- Batch recording (existing flow) ---
 
     private fun startRecording() {
         val started = audioRecorder?.start() ?: false
@@ -124,6 +152,118 @@ class DictationService : Service() {
         }
     }
 
+    // --- Streaming (Moonshine) ---
+
+    private fun startStreaming() {
+        val modelManager = ModelManager(this)
+        val config = com.hush.app.transcription.ProviderRepository.getConfig(
+            this, ProviderConfig.PROVIDER_MOONSHINE
+        ) as? ProviderConfig.Moonshine ?: ProviderConfig.Moonshine()
+
+        val modelPath = modelManager.getMoonshineModelPath(config.model)
+        if (modelPath == null) {
+            updateState(DictationState.ERROR, "Moonshine model not downloaded — go to Settings")
+            return
+        }
+
+        accumulatedText.clear()
+        streamingToExternalApp = !isAppInForeground
+
+        val provider = MoonshineProvider()
+        try {
+            provider.initialize(modelPath)
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to initialize Moonshine", e)
+            updateState(DictationState.ERROR, "Failed to load model: ${e.message}")
+            return
+        }
+
+        provider.onLineStarted = {
+            // No injection state to reset
+        }
+
+        provider.onLineTextChanged = { partialText ->
+            mainHandler.post {
+                val fullText = if (accumulatedText.isEmpty()) partialText
+                    else "$accumulatedText $partialText"
+                onStreamingTextChanged?.invoke(fullText)
+                if (streamingToExternalApp) {
+                    sendBroadcast(Intent(ACTION_OVERLAY_SHOW).setPackage(packageName).apply {
+                        putExtra(EXTRA_OVERLAY_TEXT, fullText)
+                    })
+                }
+            }
+        }
+
+        provider.onLineCompleted = { finalText ->
+            mainHandler.post {
+                if (accumulatedText.isNotEmpty()) accumulatedText.append(" ")
+                accumulatedText.append(finalText)
+
+                val fullText = accumulatedText.toString()
+                onStreamingTextChanged?.invoke(fullText)
+                if (streamingToExternalApp) {
+                    sendBroadcast(Intent(ACTION_OVERLAY_SHOW).setPackage(packageName).apply {
+                        putExtra(EXTRA_OVERLAY_TEXT, fullText)
+                    })
+                }
+            }
+        }
+
+        provider.onError = { message ->
+            mainHandler.post {
+                Log.e(TAG, "Moonshine error: $message")
+                stopStreaming()
+                updateState(DictationState.ERROR, message)
+            }
+        }
+
+        moonshineProvider = provider
+        isStreaming = true
+        recordingStartMs = System.currentTimeMillis()
+        provider.start()
+        updateState(DictationState.STREAMING)
+
+        // Auto-stop after 60s
+        autoStopJob = scope.launch {
+            delay(60_000)
+            if (isStreaming) {
+                withContext(Dispatchers.Main) { stopStreaming() }
+            }
+        }
+    }
+
+    private fun stopStreaming() {
+        autoStopJob?.cancel()
+        autoStopJob = null
+        isStreaming = false
+
+        moonshineProvider?.stop()
+        moonshineProvider?.release()
+        moonshineProvider = null
+
+        val finalText = accumulatedText.toString().trim()
+        if (finalText.isNotBlank()) {
+            val durationSeconds = ((System.currentTimeMillis() - recordingStartMs) / 1000).toInt()
+            val wordCount = finalText.split("\\s+".toRegex()).size
+            UsageRepository.recordSession(this, recordingStartMs, durationSeconds, wordCount)
+            copyToClipboard(finalText)
+        }
+
+        if (streamingToExternalApp) {
+            sendBroadcast(Intent(ACTION_OVERLAY_DISMISS).setPackage(packageName))
+            if (finalText.isNotBlank()) {
+                mainHandler.postDelayed({
+                    sendBroadcast(Intent(HushAccessibilityService.ACTION_INJECT_TEXT).setPackage(packageName))
+                }, 150)
+            }
+        }
+
+        updateState(DictationState.DONE, finalText)
+    }
+
+    // --- Common ---
+
     private fun copyToClipboard(text: String) {
         val clipboard = getSystemService(CLIPBOARD_SERVICE) as ClipboardManager
         clipboard.setPrimaryClip(ClipData.newPlainText("Transcription", text))
@@ -153,12 +293,16 @@ class DictationService : Service() {
         val (title, body, icon) = when (state) {
             DictationState.IDLE -> Triple("Hush", "Tap to start dictating", R.drawable.ic_notif)
             DictationState.RECORDING -> Triple("Recording...", "Tap to stop", R.drawable.ic_notif)
+            DictationState.STREAMING -> Triple("Streaming...", "Speaking — tap to stop", R.drawable.ic_notif)
             DictationState.PROCESSING -> Triple("Processing...", "Transcribing your audio", R.drawable.ic_notif)
             DictationState.DONE -> Triple("Copied to clipboard!", text?.take(80) ?: "", R.drawable.ic_notif)
             DictationState.ERROR -> Triple("Error", text ?: "Something went wrong", R.drawable.ic_notif)
         }
 
-        val actionLabel = if (state == DictationState.RECORDING) "Stop" else "Record"
+        val actionLabel = when (state) {
+            DictationState.RECORDING, DictationState.STREAMING -> "Stop"
+            else -> "Record"
+        }
 
         return NotificationCompat.Builder(this, HushApp.CHANNEL_ID)
             .setContentTitle(title)
@@ -173,6 +317,7 @@ class DictationService : Service() {
 
     override fun onDestroy() {
         scope.cancel()
+        moonshineProvider?.release()
         audioRecorder?.release()
         super.onDestroy()
     }

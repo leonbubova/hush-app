@@ -114,6 +114,9 @@ dependencies {
     implementation("com.facebook.soloader:soloader:0.10.5")
     implementation("com.facebook.fbjni:fbjni:0.7.0")
 
+    // Moonshine for on-device streaming transcription
+    implementation("ai.moonshine:moonshine-voice:0.0.48")
+
     // JSON parsing
     implementation("org.json:json:20231013")
 
