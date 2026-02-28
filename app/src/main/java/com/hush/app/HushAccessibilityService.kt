@@ -83,6 +83,7 @@ class HushAccessibilityService : AccessibilityService() {
 
     override fun onInterrupt() {
         Log.i(TAG, "Accessibility service interrupted")
+        overlayManager.dismiss()
     }
 
     override fun onDestroy() {

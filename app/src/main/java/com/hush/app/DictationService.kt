@@ -213,7 +213,17 @@ class DictationService : Service() {
         provider.onError = { message ->
             mainHandler.post {
                 Log.e(TAG, "Moonshine error: $message")
-                stopStreaming()
+                // Dismiss overlay explicitly first — safety net in case stopStreaming() throws
+                if (streamingToExternalApp) {
+                    sendBroadcast(Intent(ACTION_OVERLAY_DISMISS).setPackage(packageName))
+                }
+                try {
+                    stopStreaming()
+                } catch (e: Exception) {
+                    Log.e(TAG, "Error in stopStreaming during error handler", e)
+                    isStreaming = false
+                    moonshineProvider = null
+                }
                 updateState(DictationState.ERROR, message)
             }
         }

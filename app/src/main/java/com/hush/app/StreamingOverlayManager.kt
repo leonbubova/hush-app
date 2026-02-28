@@ -4,6 +4,8 @@ import android.accessibilityservice.AccessibilityService
 import android.graphics.Color
 import android.graphics.PixelFormat
 import android.graphics.drawable.GradientDrawable
+import android.os.Handler
+import android.os.Looper
 import android.util.TypedValue
 import android.view.Gravity
 import android.view.WindowManager
@@ -13,18 +15,26 @@ import android.widget.TextView
 
 class StreamingOverlayManager(private val service: AccessibilityService) {
 
+    companion object {
+        private const val WATCHDOG_TIMEOUT_MS = 5000L
+    }
+
     private val windowManager = service.getSystemService(AccessibilityService.WINDOW_SERVICE) as WindowManager
     private var overlayView: LinearLayout? = null
     private var textView: TextView? = null
+    private val watchdogHandler = Handler(Looper.getMainLooper())
+    private val watchdogRunnable = Runnable { dismiss() }
 
     fun show(text: String) {
         if (overlayView == null) {
             createOverlay()
         }
         textView?.text = text
+        resetWatchdog()
     }
 
     fun dismiss() {
+        watchdogHandler.removeCallbacks(watchdogRunnable)
         overlayView?.let {
             try {
                 windowManager.removeView(it)
@@ -36,6 +46,11 @@ class StreamingOverlayManager(private val service: AccessibilityService) {
         textView = null
     }
 
+    private fun resetWatchdog() {
+        watchdogHandler.removeCallbacks(watchdogRunnable)
+        watchdogHandler.postDelayed(watchdogRunnable, WATCHDOG_TIMEOUT_MS)
+    }
+
     private fun createOverlay() {
         val dp = { value: Float ->
             TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, value, service.resources.displayMetrics).toInt()
@@ -44,36 +59,37 @@ class StreamingOverlayManager(private val service: AccessibilityService) {
         // Container with rounded corners
         val container = LinearLayout(service).apply {
             orientation = LinearLayout.VERTICAL
-            setPadding(dp(14f), dp(10f), dp(14f), dp(10f))
+            setPadding(dp(12f), dp(8f), dp(12f), dp(8f))
             background = GradientDrawable().apply {
                 setColor(Color.parseColor("#F21A1A2E"))
-                setStroke(dp(1f), Color.parseColor("#6C63FF"))
+                setStroke(1, Color.parseColor("#4D6C63FF"))
                 cornerRadius = dp(16f).toFloat()
             }
         }
-
-        // "Streaming..." label
-        val label = TextView(service).apply {
-            this.text = "Streaming..."
-            setTextColor(Color.parseColor("#6C63FF"))
-            textSize = 12f
-        }
-        container.addView(label)
 
         // Scrolling text view
         val scrollView = ScrollView(service).apply {
             layoutParams = LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT,
-                dp(80f),
+                dp(64f),
             )
         }
         val tv = TextView(service).apply {
             setTextColor(Color.parseColor("#E6FFFFFF"))
             textSize = 14f
-            setPadding(0, dp(4f), 0, 0)
         }
         scrollView.addView(tv)
         container.addView(scrollView)
+
+        // "Hush" tag — subtle, right-aligned
+        val tag = TextView(service).apply {
+            this.text = "Hush"
+            setTextColor(Color.parseColor("#80FFFFFF"))
+            textSize = 10f
+            gravity = Gravity.END
+            setPadding(0, dp(2f), 0, 0)
+        }
+        container.addView(tag)
 
         textView = tv
 
