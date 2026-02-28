@@ -8,8 +8,10 @@ Android AI dictation app — speak anywhere, transcribe instantly. A native alte
 - **Auto-inject into text fields** — if a text field is focused, transcribed text is pasted directly at the cursor
 - **Clipboard fallback** — text is always copied to clipboard, even when auto-inject is active
 - **Background service** — persistent foreground notification with quick-action controls
-- **Multi-provider transcription** — choose between Voxtral (Mistral), OpenAI Whisper, Groq, or Local (on-device)
+- **Multi-provider transcription** — choose between Voxtral (Mistral), OpenAI Whisper, Groq, Local (on-device), or Moonshine (streaming)
 - **Local on-device transcription** — Whisper tiny.en via ExecuTorch, no internet required
+- **Moonshine streaming** — real-time on-device transcription via Moonshine SDK, live text as you speak
+- **Streaming overlay** — floating overlay shows live transcription text in external apps, single paste on stop
 - **Settings screen** — switch providers, configure API keys and models per provider
 - **Custom blob/ring UI** — dark theme with animated glowing blobs and minimal ring-based mic button
 - **Transcription history** — recent transcriptions stored locally with tap-to-copy
@@ -106,9 +108,9 @@ TestTags              — central registry of Compose testTag constants
 transcription/
   TranscriptionProvider — interface for all transcription backends
   TranscribeResult      — sealed class: Success(text) | Error(code, message)
-  ProviderConfig        — sealed config hierarchy (Voxtral, OpenAI, Groq, Local)
+  ProviderConfig        — sealed config hierarchy (Voxtral, OpenAI, Groq, Local, Moonshine)
   ProviderRepository    — encrypted persistence + legacy API key migration
-  ProviderFactory       — resolves active provider from config
+  ProviderFactory       — resolves active provider from config (isStreaming() check for Moonshine)
   VoxtralProvider       — Mistral Voxtral API client
   OpenAiWhisperProvider — OpenAI Whisper API client
   GroqProvider          — Groq API client (OpenAI-compatible)
@@ -117,6 +119,8 @@ transcription/
   MelSpectrogram        — 80-channel log-mel spectrogram (N_FFT=400, hop=160, 3000 frames)
   WhisperTokenizer      — BPE token ID → text decoding (50k vocab from assets)
   ModelManager          — model download, storage, and lifecycle management
+  MoonshineProvider     — streaming on-device transcription via Moonshine SDK
+  StreamingOverlayManager — floating TYPE_ACCESSIBILITY_OVERLAY for live streaming text in external apps
 ```
 
 ### Auto-inject flow
@@ -132,6 +136,17 @@ DictationService.stopRecording()
   → if not found: no-op (text already on clipboard)
 ```
 
+### Streaming flow (Moonshine)
+
+```
+DictationService.startStreaming()
+  → MoonshineProvider.start() → live callbacks (onLineTextChanged, onLineCompleted)
+  → if external app: broadcast ACTION_OVERLAY_SHOW → StreamingOverlayManager shows live text
+  → on stop: copyToClipboard(finalText)
+  → broadcast ACTION_OVERLAY_DISMISS → dismiss overlay
+  → delayed broadcast ACTION_INJECT_TEXT → ACTION_PASTE (single paste)
+```
+
 ## Tech stack
 
 - Kotlin + Jetpack Compose
@@ -140,6 +155,7 @@ DictationService.stopRecording()
 - ExecuTorch for on-device ML inference (Whisper tiny.en)
 - OkHttp for API calls
 - EncryptedSharedPreferences for secure credential storage
+- Moonshine SDK (`ai.moonshine:moonshine-voice`) for streaming on-device transcription
 - Coroutines for async transcription
 
 ## Compatibility
