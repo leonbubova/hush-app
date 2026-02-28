@@ -33,9 +33,11 @@ dev-screenshots/
 scripts/emulator_controller_pb2.py
 scripts/emulator_controller_pb2_grpc.py
 
-# Claude Code (track rules and skills, ignore operational files)
-.claude/settings.local.json
-.claude/build-result.md
-.claude/dump.xml
-.claude/hot-reload.sh
-.claude/.last-build-timestamp
+# Claude Code
+.claude/
+
+# Project notes (internal)
+notes/
+
+# Temp audit files
+temp/

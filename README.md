@@ -168,14 +168,14 @@ DictationService.startStreaming()
 Requires JDK 17 and Android SDK (no Android Studio needed):
 
 ```bash
+# Set environment (adjust paths for your system)
+export JAVA_HOME=/path/to/jdk17        # e.g. /opt/homebrew/opt/openjdk@17 (macOS)
+export ANDROID_HOME=/path/to/android-sdk # e.g. ~/Android/Sdk (Linux), /opt/homebrew/share/android-commandlinetools (macOS)
+
 # Debug build (com.hush.app.debug — "Hush Dev")
-JAVA_HOME=/opt/homebrew/opt/openjdk@17 \
-ANDROID_HOME=/opt/homebrew/share/android-commandlinetools \
 ./gradlew assembleDebug
 
 # Release build (com.hush.app — "Hush", requires signing config)
-JAVA_HOME=/opt/homebrew/opt/openjdk@17 \
-ANDROID_HOME=/opt/homebrew/share/android-commandlinetools \
 ./gradlew assembleRelease
 ```
 
@@ -228,7 +228,7 @@ Hush supports local on-device transcription using ExecuTorch with Whisper models
 
 ### Exporting the Whisper model
 
-See [`notes/PLAN-model-export.md`](notes/PLAN-model-export.md) for the full export plan with 3 quantization variants (INT4, INT8, FP32).
+Models are exported using [`optimum-executorch`](https://github.com/huggingface/optimum-executorch) with 3 quantization variants (INT4, INT8, FP32). See the [hush-app-models](https://github.com/leonbubova/hush-app-models) repo for export scripts and pre-built models.
 
 ### Using local transcription
 
@@ -300,8 +300,7 @@ TEST_GROQ_KEY=your-key
 #### Environment setup
 
 ```bash
-export JAVA_HOME=/opt/homebrew/opt/openjdk@17
-export ANDROID_HOME=/opt/homebrew/share/android-commandlinetools
+# Ensure JAVA_HOME and ANDROID_HOME are set (see Building section above)
 EMU=$ANDROID_HOME/emulator/emulator
 ADB=$ANDROID_HOME/platform-tools/adb
 ```
@@ -323,16 +322,13 @@ ANDROID_SERIAL=emulator-5554 ./gradlew :app:connectedDebugAndroidTest
 $ADB -s emulator-5554 pull /sdcard/Pictures/hush-tests/ screenshots/
 ```
 
-## Claude Code Emulator Session
+## AI-Assisted Development
 
-For AI-assisted development, the project includes a prompt for running a dedicated emulator/build session alongside a sandboxed code-editing session. See [`notes/emulator-session-prompt.md`](notes/emulator-session-prompt.md) for the full setup.
-
-The emulator session handles:
-- Building and deploying the debug APK
-- Taking screenshots of all screens after each rebuild
-- Running UI automation (uiautomator dump + tap)
+This project is developed with [Claude Code](https://claude.ai/claude-code). The repo includes dev tooling for emulator-based UI verification:
+- Build and deploy debug APK to emulator
+- Screenshot all screens after each rebuild
+- UI automation via `uiautomator dump` + tap
 - Hot reload loop watching `app/src/` for changes
-- Communication with the frontend session via `.claude/build-request.md` / `.claude/build-result.md`
 
 ## Security
 
