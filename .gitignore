@@ -35,6 +35,7 @@ scripts/emulator_controller_pb2_grpc.py
 
 # Claude Code
 .claude/
+CLAUDE.md
 
 # Project notes (internal)
 notes/
