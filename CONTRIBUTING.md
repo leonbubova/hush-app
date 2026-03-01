@@ -57,7 +57,7 @@ Use the [bug report template](.github/ISSUE_TEMPLATE/bug_report.md) and include:
 
 ## Security Issues
 
-**Do NOT open public issues for security vulnerabilities.** See [SECURITY.md](SECURITY.md) for responsible disclosure instructions.
+**Do NOT open public issues for security vulnerabilities.** Please report them privately via [LinkedIn](https://www.linkedin.com/in/leonbubova/).
 
 ## Code Style
 
