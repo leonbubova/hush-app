@@ -250,6 +250,17 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         _state.value = _state.value.copy(usageSessions = emptyList())
     }
 
+    fun getExportJson(): String = DataExporter.exportJson(getApplication())
+
+    fun importFromJson(json: String): DataExporter.ImportResult {
+        val result = DataExporter.importJson(getApplication(), json)
+        _state.value = _state.value.copy(
+            history = HistoryRepository.loadAll(getApplication()),
+            usageSessions = UsageRepository.loadSessions(getApplication()),
+        )
+        return result
+    }
+
     override fun onCleared() {
         if (bound) {
             getApplication<Application>().unbindService(connection)

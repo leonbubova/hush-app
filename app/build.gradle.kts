@@ -53,11 +53,6 @@ android {
     buildTypes {
         debug {
             applicationIdSuffix = ".debug"
-            packaging {
-                jniLibs {
-                    useLegacyPackaging = true
-                }
-            }
         }
         release {
             isMinifyEnabled = false
@@ -139,6 +134,29 @@ dependencies {
     androidTestImplementation("androidx.test:runner:1.6.2")
     androidTestImplementation("androidx.test:rules:1.6.1")
     androidTestImplementation("androidx.test.uiautomator:uiautomator:2.3.0")
+}
+
+// Patch 4KB-aligned ELF LOAD segments to 16KB after native libs are merged.
+// Moonshine SDK ships .so files with 4KB p_align — Android 15+ requires 16KB.
+// This patches the ELF program headers in-place (safe: actual offsets are already aligned).
+androidComponents {
+    onVariants { variant ->
+        val capitalizedName = variant.name.replaceFirstChar { it.uppercase() }
+        project.tasks.matching { it.name == "strip${capitalizedName}DebugSymbols" }.configureEach {
+            doFirst {
+                val mergedDir = file("build/intermediates/merged_native_libs/${variant.name}/merge${capitalizedName}NativeLibs/out/lib")
+                if (mergedDir.exists()) {
+                    val script = rootProject.file("scripts/fix_elf_alignment.py")
+                    val soFiles = mergedDir.walkTopDown().filter { it.extension == "so" }.toList()
+                    if (soFiles.isNotEmpty() && script.exists()) {
+                        exec {
+                            commandLine("python3", script.absolutePath, *soFiles.map { it.absolutePath }.toTypedArray())
+                        }
+                    }
+                }
+            }
+        }
+    }
 }
 
 // Apply Firebase plugins only when google-services.json is present

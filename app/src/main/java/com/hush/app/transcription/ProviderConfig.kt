@@ -70,6 +70,18 @@ sealed class ProviderConfig {
         }
     }
 
+    /** Short human-readable label for the active provider + model, e.g. "Moonshine tiny" */
+    val displayLabel: String get() = when (this) {
+        is Moonshine -> ModelManager.getMoonshineModelInfo(model)
+            ?.displayName?.substringBefore(" (") ?: "Moonshine $model"
+        is Local -> ModelManager.getModelInfo(model)
+            ?.displayName?.substringBefore(" (") ?: "Local $model"
+        is Voxtral -> "Voxtral · $model"
+        is OpenAiWhisper -> "OpenAI · $model"
+        is Groq -> "Groq · $model"
+        is VoxtralRealtime -> "Voxtral RT · $model"
+    }
+
     companion object {
         const val PROVIDER_VOXTRAL = "voxtral"
         const val PROVIDER_OPENAI = "openai"

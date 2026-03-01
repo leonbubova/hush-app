@@ -4,6 +4,7 @@ import android.Manifest
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Build
+import com.hush.app.BuildConfig
 import android.os.Bundle
 import android.provider.Settings
 import android.view.KeyEvent
@@ -25,6 +26,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.foundation.layout.Row
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.blur
@@ -34,6 +36,8 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.layout.boundsInParent
+import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
@@ -57,12 +61,45 @@ class MainActivity : ComponentActivity() {
 
     private val viewModel: MainViewModel by viewModels()
     private var lastVolumeDownTime = 0L
+    private var pendingExportJson: String? = null
 
     private val permissionLauncher = registerForActivityResult(
         ActivityResultContracts.RequestMultiplePermissions()
     ) { results ->
         if (results[Manifest.permission.RECORD_AUDIO] == true) {
             viewModel.startServiceIfNeeded()
+        }
+    }
+
+    private val createDocumentLauncher = registerForActivityResult(
+        ActivityResultContracts.CreateDocument("application/json")
+    ) { uri ->
+        if (uri == null) return@registerForActivityResult
+        val json = pendingExportJson ?: return@registerForActivityResult
+        pendingExportJson = null
+        try {
+            contentResolver.openOutputStream(uri)?.use { it.write(json.toByteArray()) }
+            android.widget.Toast.makeText(this, "Data exported", android.widget.Toast.LENGTH_SHORT).show()
+        } catch (e: Exception) {
+            android.widget.Toast.makeText(this, "Export failed: ${e.message}", android.widget.Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    private val openDocumentLauncher = registerForActivityResult(
+        ActivityResultContracts.OpenDocument()
+    ) { uri ->
+        if (uri == null) return@registerForActivityResult
+        try {
+            val json = contentResolver.openInputStream(uri)?.bufferedReader()?.readText()
+                ?: throw IllegalStateException("Could not read file")
+            val result = viewModel.importFromJson(json)
+            android.widget.Toast.makeText(
+                this,
+                "Imported ${result.historyCount} entries, ${result.usageCount} sessions",
+                android.widget.Toast.LENGTH_SHORT,
+            ).show()
+        } catch (e: Exception) {
+            android.widget.Toast.makeText(this, "Import failed: ${e.message}", android.widget.Toast.LENGTH_SHORT).show()
         }
     }
 
@@ -91,6 +128,10 @@ class MainActivity : ComponentActivity() {
                             currentScreen = state.currentScreen,
                             onNavigate = { screen ->
                                 viewModel.navigateTo(screen)
+                                scope.launch { drawerState.close() }
+                            },
+                            onAccessibilitySettings = {
+                                startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS))
                                 scope.launch { drawerState.close() }
                             },
                         )
@@ -124,6 +165,14 @@ class MainActivity : ComponentActivity() {
                             onDeleteModel = { viewModel.deleteModel(it) },
                             onOpenDrawer = { scope.launch { drawerState.open() } },
                             onBack = { viewModel.navigateTo(MainViewModel.AppScreen.HOME) },
+                            onExport = {
+                                pendingExportJson = viewModel.getExportJson()
+                                val dateStr = java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.US).format(java.util.Date())
+                                createDocumentLauncher.launch("hush-backup-$dateStr.json")
+                            },
+                            onImport = {
+                                openDocumentLauncher.launch(arrayOf("application/json"))
+                            },
                         )
                     }
                 }
@@ -212,12 +261,21 @@ fun HushScreen(
                     }
                 },
                 title = {
-                    Text(
-                        "Hush!",
-                        fontFamily = PlayfairDisplay,
-                        fontWeight = FontWeight.Bold,
-                        color = Color.White,
-                    )
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text(
+                            "Hush!",
+                            fontFamily = PlayfairDisplay,
+                            fontWeight = FontWeight.Bold,
+                            color = Color.White,
+                        )
+                        if (BuildConfig.DEBUG) {
+                            Text(
+                                "  dev",
+                                fontSize = 12.sp,
+                                color = Color.White.copy(alpha = 0.5f),
+                            )
+                        }
+                    }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent)
             )
@@ -228,13 +286,11 @@ fun HushScreen(
                 .fillMaxSize()
                 .padding(padding),
         ) {
-            // Blobs as full-screen background, biased toward center
-            Box(
-                modifier = Modifier.fillMaxSize(),
-                contentAlignment = Alignment.Center,
-            ) {
-                AnimatedBlobs(isRecording = isActive)
-            }
+            // Track mic button center for blob alignment
+            var micCenterY by remember { mutableFloatStateOf(0f) }
+
+            // Blobs behind everything, centered on mic button
+            AnimatedBlobs(isRecording = isActive, centerYPx = micCenterY)
 
             // Content on top
             Column(
@@ -281,16 +337,30 @@ fun HushScreen(
                     textAlign = TextAlign.Center,
                     modifier = Modifier.testTag(TestTags.SUBTITLE_TEXT),
                 )
+
+                // Current model indicator
+                val activeConfig = state.providerConfigs[state.activeProviderId]
+                if (activeConfig != null) {
+                    Spacer(Modifier.height(6.dp))
+                    Text(
+                        text = activeConfig.displayLabel,
+                        fontSize = 12.sp,
+                        color = Color.White.copy(alpha = 0.35f),
+                    )
+                }
             }
 
             Spacer(Modifier.height(24.dp))
 
-            // Mic button — fixed height so it stays in position regardless of history
+            // Mic button — reports its center so blobs can align
             val hasHistory = state.history.isNotEmpty()
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .then(if (hasHistory) Modifier.weight(1f) else Modifier.height(300.dp)),
+                    .weight(1f)
+                    .onGloballyPositioned { coords ->
+                        micCenterY = coords.boundsInParent().center.y
+                    },
                 contentAlignment = Alignment.Center,
             ) {
                 MicButton(
@@ -431,7 +501,7 @@ fun HushScreen(
 }
 
 @Composable
-fun AnimatedBlobs(isRecording: Boolean) {
+fun AnimatedBlobs(isRecording: Boolean, centerYPx: Float = 0f) {
     val infiniteTransition = rememberInfiniteTransition(label = "blobs")
 
     val sizeMultiplier by animateFloatAsState(
@@ -519,7 +589,7 @@ fun AnimatedBlobs(isRecording: Boolean) {
             .blur(3.dp)
     ) {
         val cx = size.width / 2
-        val cy = size.height * 0.33f
+        val cy = if (centerYPx > 0f) centerYPx else size.height / 2
         val drift = 25f
 
         blobs.forEachIndexed { i, blob ->
@@ -662,19 +732,31 @@ fun HushUsageScaffold(
 fun HushDrawerContent(
     currentScreen: MainViewModel.AppScreen,
     onNavigate: (MainViewModel.AppScreen) -> Unit,
+    onAccessibilitySettings: () -> Unit = {},
 ) {
     ModalDrawerSheet(
         drawerContainerColor = Color(0xFF1A1A2E),
     ) {
         Spacer(Modifier.height(32.dp))
-        Text(
-            "Hush",
-            fontSize = 28.sp,
-            fontFamily = PlayfairDisplay,
-            fontWeight = FontWeight.Bold,
-            color = Color.White,
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
             modifier = Modifier.padding(horizontal = 24.dp, vertical = 16.dp),
-        )
+        ) {
+            Text(
+                "Hush",
+                fontSize = 28.sp,
+                fontFamily = PlayfairDisplay,
+                fontWeight = FontWeight.Bold,
+                color = Color.White,
+            )
+            if (BuildConfig.DEBUG) {
+                Text(
+                    "  dev",
+                    fontSize = 14.sp,
+                    color = Color.White.copy(alpha = 0.5f),
+                )
+            }
+        }
         Spacer(Modifier.height(8.dp))
         DrawerItem(
             label = "Home",
@@ -694,6 +776,13 @@ fun HushDrawerContent(
             onClick = { onNavigate(MainViewModel.AppScreen.SETTINGS) },
             testTag = TestTags.DRAWER_SETTINGS,
         )
+        Spacer(Modifier.weight(1f))
+        DrawerItem(
+            label = "Accessibility Settings",
+            selected = false,
+            onClick = onAccessibilitySettings,
+        )
+        Spacer(Modifier.height(24.dp))
     }
 }
 

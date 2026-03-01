@@ -42,6 +42,11 @@ object HistoryRepository {
         }
     }
 
+    fun saveAll(context: Context, entries: List<String>) {
+        val arr = JSONArray(entries)
+        getEncryptedPrefs(context).edit().putString(KEY_HISTORY, arr.toString()).commit()
+    }
+
     fun clear(context: Context) {
         getEncryptedPrefs(context).edit().remove(KEY_HISTORY).commit()
     }

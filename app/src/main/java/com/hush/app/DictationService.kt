@@ -1,6 +1,7 @@
 package com.hush.app
 
 import android.app.Notification
+import com.hush.app.BuildConfig
 import android.app.PendingIntent
 import android.app.Service
 import android.content.ClipData
@@ -183,7 +184,7 @@ class DictationService : Service() {
 
         accumulatedText.clear()
         streamingToExternalApp = !isAppInForeground
-        streamingModelLabel = config.model
+        streamingModelLabel = config.displayLabel
 
         val provider = MoonshineProvider()
         try {
@@ -266,7 +267,7 @@ class DictationService : Service() {
 
         accumulatedText.clear()
         streamingToExternalApp = !isAppInForeground
-        streamingModelLabel = config.model
+        streamingModelLabel = config.displayLabel
 
         val provider = VoxtralRealtimeProvider(config)
 
@@ -405,7 +406,7 @@ class DictationService : Service() {
         )
 
         val (title, body, icon) = when (state) {
-            DictationState.IDLE -> Triple("Hush", "Tap to start dictating", R.drawable.ic_notif)
+            DictationState.IDLE -> Triple(if (BuildConfig.DEBUG) "Hush dev" else "Hush", "Tap to start dictating", R.drawable.ic_notif)
             DictationState.RECORDING -> Triple("Recording...", "Tap to stop", R.drawable.ic_notif)
             DictationState.STREAMING -> Triple("Streaming...", "Speaking — tap to stop", R.drawable.ic_notif)
             DictationState.PROCESSING -> Triple("Processing...", "Transcribing your audio", R.drawable.ic_notif)

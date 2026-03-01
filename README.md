@@ -105,6 +105,7 @@ SettingsScreen        — provider selection and per-provider configuration UI
 HushApp               — Application class, notification channel setup
 UsageScreen           — Compose usage dashboard (streak, charts, heatmap, cost)
 UsageRepository       — session persistence (SharedPreferences + JSON)
+HistoryRepository     — transcription history persistence (EncryptedSharedPreferences + JSON)
 TestTags              — central registry of Compose testTag constants
 
 transcription/
@@ -257,6 +258,7 @@ Models are exported using [`optimum-executorch`](https://github.com/huggingface/
 | `LocalProviderTest` | 6 | Model not downloaded errors, metadata, requiresNetwork=false |
 | `ModelManagerTest` | 10 | Model status, file paths, download/delete, available models |
 | `UsageRepositoryTest` | 8 | Record/load/clear, MAX_SESSIONS cap, malformed JSON |
+| `HistoryRepositoryTest` | 6 | Add/load/clear, prepend order, blank text no-op, accumulation |
 | `MelSpectrogramTest` | 12 | Output shape, Hann window, mel filterbank, sine wave energy, log scaling |
 | `WhisperTokenizerTest` | 12 | BPE decoding, EOS/special token filtering, vocab loading, known phrases |
 | `MainViewModelTest` | 22 | Init state, navigation, provider management, history, usage, service toggle |

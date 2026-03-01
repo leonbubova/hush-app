@@ -1,6 +1,7 @@
 package com.hush.app
 
 import android.accessibilityservice.AccessibilityService
+import com.hush.app.BuildConfig
 import android.graphics.Color
 import android.graphics.PixelFormat
 import android.graphics.drawable.GradientDrawable
@@ -92,7 +93,7 @@ class StreamingOverlayManager(private val service: AccessibilityService) {
 
         // "Hush" tag — subtle, right-aligned
         val tag = TextView(service).apply {
-            this.text = "Hush"
+            this.text = if (BuildConfig.DEBUG) "Hush dev" else "Hush"
             setTextColor(Color.parseColor("#80FFFFFF"))
             textSize = 10f
             gravity = Gravity.END

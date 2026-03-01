@@ -38,6 +38,8 @@ fun SettingsScreen(
     onDeleteModel: (String) -> Unit = {},
     onOpenDrawer: () -> Unit,
     onBack: () -> Unit,
+    onExport: () -> Unit = {},
+    onImport: () -> Unit = {},
 ) {
     Scaffold(
         containerColor = Color(0xFF0D0D1A),
@@ -102,6 +104,55 @@ fun SettingsScreen(
                     onDownloadModel = onDownloadModel,
                     onDeleteModel = onDeleteModel,
                 )
+            }
+
+            Spacer(Modifier.height(24.dp))
+
+            // Data section
+            Text(
+                "Data",
+                fontSize = 14.sp,
+                fontWeight = FontWeight.SemiBold,
+                color = Color.White.copy(alpha = 0.6f),
+                modifier = Modifier.padding(bottom = 12.dp),
+            )
+
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(16.dp),
+                colors = CardDefaults.cardColors(containerColor = Color.White.copy(alpha = 0.06f)),
+            ) {
+                Column(modifier = Modifier.padding(16.dp)) {
+                    Text(
+                        "Export or import your transcription history and usage data.",
+                        fontSize = 13.sp,
+                        color = Color.White.copy(alpha = 0.5f),
+                        modifier = Modifier.padding(bottom = 12.dp),
+                    )
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    ) {
+                        Button(
+                            onClick = onExport,
+                            modifier = Modifier.weight(1f),
+                            shape = RoundedCornerShape(12.dp),
+                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF6C63FF)),
+                        ) {
+                            Text("Export Data", fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
+                        }
+                        OutlinedButton(
+                            onClick = onImport,
+                            modifier = Modifier.weight(1f),
+                            shape = RoundedCornerShape(12.dp),
+                            border = androidx.compose.foundation.BorderStroke(
+                                1.dp, Color(0xFF6C63FF).copy(alpha = 0.5f)
+                            ),
+                        ) {
+                            Text("Import Data", fontSize = 14.sp, color = Color(0xFF6C63FF))
+                        }
+                    }
+                }
             }
 
             Spacer(Modifier.height(32.dp))

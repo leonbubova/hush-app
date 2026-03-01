@@ -49,7 +49,7 @@ object UsageRepository {
         prefs(context).edit().remove(KEY_SESSIONS).apply()
     }
 
-    private fun saveSessions(context: Context, sessions: List<RecordingSession>) {
+    internal fun saveSessions(context: Context, sessions: List<RecordingSession>) {
         val arr = JSONArray()
         sessions.forEach { s ->
             arr.put(JSONObject().apply {
