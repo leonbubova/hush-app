@@ -13,6 +13,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.autofill.ContentType
+import androidx.compose.ui.semantics.contentType
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
@@ -729,6 +732,7 @@ private fun ApiKeyField(
             singleLine = true,
             modifier = Modifier
                 .fillMaxWidth()
+                .semantics { contentType = ContentType.Password }
                 .testTag(TestTags.API_KEY_FIELD),
             colors = settingsTextFieldColors(),
         )
