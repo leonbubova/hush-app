@@ -61,7 +61,7 @@ sealed class ProviderConfig {
     data class VoxtralRealtime(
         val apiKey: String = "",
         val model: String = "voxtral-mini-transcribe-realtime-2602",
-        val endpoint: String = "wss://api.mistral.ai/v1/realtime",
+        val endpoint: String = "wss://api.mistral.ai/v1/audio/transcriptions/realtime",
     ) : ProviderConfig() {
         override fun toJson() = JSONObject().apply {
             put("apiKey", apiKey)
@@ -100,11 +100,16 @@ sealed class ProviderConfig {
             PROVIDER_MOONSHINE -> Moonshine(
                 model = json.optString("model", "tiny-streaming-en"),
             )
-            PROVIDER_VOXTRAL_REALTIME -> VoxtralRealtime(
-                apiKey = json.optString("apiKey", ""),
-                model = json.optString("model", "voxtral-mini-transcribe-realtime-2602"),
-                endpoint = json.optString("endpoint", "wss://api.mistral.ai/v1/realtime"),
-            )
+            PROVIDER_VOXTRAL_REALTIME -> {
+                val storedEndpoint = json.optString("endpoint", "")
+                val endpoint = if (storedEndpoint.isEmpty() || storedEndpoint == "wss://api.mistral.ai/v1/realtime")
+                    "wss://api.mistral.ai/v1/audio/transcriptions/realtime" else storedEndpoint
+                VoxtralRealtime(
+                    apiKey = json.optString("apiKey", ""),
+                    model = json.optString("model", "voxtral-mini-transcribe-realtime-2602"),
+                    endpoint = endpoint,
+                )
+            }
             else -> Voxtral()
         }
 

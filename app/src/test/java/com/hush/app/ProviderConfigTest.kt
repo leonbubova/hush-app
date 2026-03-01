@@ -151,6 +151,7 @@ class ProviderConfigTest {
         assertEquals("", config.apiKey)
         assertEquals("voxtral-mini-transcribe-realtime-2602", config.model)
         assertTrue(config.endpoint.contains("mistral.ai"))
+        assertTrue(config.endpoint.contains("/audio/transcriptions/realtime"))
     }
 
     @Test

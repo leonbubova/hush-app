@@ -29,6 +29,7 @@ class VoxtralRealtimeProvider(private val config: ProviderConfig.VoxtralRealtime
     private var audioRecord: AudioRecord? = null
     private var captureThread: Thread? = null
     @Volatile private var isRunning = false
+    private val currentLine = StringBuilder()
 
     var onLineStarted: (() -> Unit)? = null
     var onLineTextChanged: ((String) -> Unit)? = null
@@ -36,6 +37,7 @@ class VoxtralRealtimeProvider(private val config: ProviderConfig.VoxtralRealtime
     var onError: ((String) -> Unit)? = null
 
     fun start() {
+        currentLine.clear()
         if (config.apiKey.isBlank()) {
             onError?.invoke("Mistral API key not configured — go to Settings")
             return
@@ -45,8 +47,9 @@ class VoxtralRealtimeProvider(private val config: ProviderConfig.VoxtralRealtime
             .readTimeout(0, TimeUnit.MILLISECONDS)
             .build()
 
+        val wsUrl = "${config.endpoint}?model=${config.model}"
         val request = Request.Builder()
-            .url(config.endpoint)
+            .url(wsUrl)
             .header("Authorization", "Bearer ${config.apiKey}")
             .build()
 
@@ -55,7 +58,12 @@ class VoxtralRealtimeProvider(private val config: ProviderConfig.VoxtralRealtime
                 Log.i(TAG, "WebSocket connected")
                 val sessionUpdate = JSONObject().apply {
                     put("type", "session.update")
-                    put("model", config.model)
+                    put("session", JSONObject().apply {
+                        put("audio_format", JSONObject().apply {
+                            put("encoding", "pcm_s16le")
+                            put("sample_rate", SAMPLE_RATE)
+                        })
+                    })
                 }
                 ws.send(sessionUpdate.toString())
                 startAudioCapture()
@@ -64,15 +72,20 @@ class VoxtralRealtimeProvider(private val config: ProviderConfig.VoxtralRealtime
             override fun onMessage(ws: WebSocket, text: String) {
                 try {
                     val msg = JSONObject(text)
-                    when (msg.optString("type")) {
-                        "transcription.delta" -> {
+                    val type = msg.optString("type")
+                    Log.i(TAG, "Received: $type")
+                    when (type) {
+                        "transcription.text.delta" -> {
                             val delta = msg.optString("text", "")
                             if (delta.isNotEmpty()) {
-                                mainHandler.post { onLineTextChanged?.invoke(delta) }
+                                currentLine.append(delta)
+                                val fullText = currentLine.toString()
+                                mainHandler.post { onLineTextChanged?.invoke(fullText) }
                             }
                         }
                         "transcription.done" -> {
-                            val finalText = msg.optString("text", "")
+                            val finalText = msg.optString("text", "").ifEmpty { currentLine.toString() }
+                            currentLine.clear()
                             mainHandler.post { onLineCompleted?.invoke(finalText) }
                         }
                         "error" -> {
@@ -142,7 +155,7 @@ class VoxtralRealtimeProvider(private val config: ProviderConfig.VoxtralRealtime
                     val data = if (read == buffer.size) buffer else buffer.copyOf(read)
                     val encoded = Base64.encodeToString(data, Base64.NO_WRAP)
                     val msg = JSONObject().apply {
-                        put("type", "input_audio_buffer.append")
+                        put("type", "input_audio.append")
                         put("audio", encoded)
                     }
                     webSocket?.send(msg.toString())
@@ -161,12 +174,16 @@ class VoxtralRealtimeProvider(private val config: ProviderConfig.VoxtralRealtime
         audioRecord = null
 
         try {
-            val commit = JSONObject().apply {
-                put("type", "input_audio_buffer.commit")
+            val flush = JSONObject().apply {
+                put("type", "input_audio.flush")
             }
-            webSocket?.send(commit.toString())
+            webSocket?.send(flush.toString())
+            val end = JSONObject().apply {
+                put("type", "input_audio.end")
+            }
+            webSocket?.send(end.toString())
         } catch (e: Exception) {
-            Log.w(TAG, "Error sending commit", e)
+            Log.w(TAG, "Error sending flush/end", e)
         }
 
         webSocket?.close(1000, "Session ended")
