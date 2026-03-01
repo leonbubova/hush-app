@@ -130,6 +130,38 @@ class ProviderConfigTest {
         assertEquals("tiny-streaming-en", json.getString("model"))
     }
 
+    // --- VoxtralRealtime round-trip ---
+
+    @Test
+    fun `VoxtralRealtime config round-trips through JSON`() {
+        val original = ProviderConfig.VoxtralRealtime(
+            apiKey = "sk-realtime-test",
+            model = "voxtral-mini-transcribe-realtime-2602",
+            endpoint = "wss://custom.endpoint/v1/realtime",
+        )
+        val json = original.toJson()
+        val restored = ProviderConfig.fromJson(ProviderConfig.PROVIDER_VOXTRAL_REALTIME, json)
+
+        assertEquals(original, restored)
+    }
+
+    @Test
+    fun `VoxtralRealtime default has sensible values`() {
+        val config = ProviderConfig.default(ProviderConfig.PROVIDER_VOXTRAL_REALTIME) as ProviderConfig.VoxtralRealtime
+        assertEquals("", config.apiKey)
+        assertEquals("voxtral-mini-transcribe-realtime-2602", config.model)
+        assertTrue(config.endpoint.contains("mistral.ai"))
+    }
+
+    @Test
+    fun `VoxtralRealtime toJson includes all fields`() {
+        val config = ProviderConfig.VoxtralRealtime(apiKey = "key", model = "m", endpoint = "wss://e")
+        val json = config.toJson()
+        assertEquals("key", json.getString("apiKey"))
+        assertEquals("m", json.getString("model"))
+        assertEquals("wss://e", json.getString("endpoint"))
+    }
+
     // --- Edge cases ---
 
     @Test
@@ -164,8 +196,9 @@ class ProviderConfigTest {
             ProviderConfig.PROVIDER_GROQ,
             ProviderConfig.PROVIDER_LOCAL,
             ProviderConfig.PROVIDER_MOONSHINE,
+            ProviderConfig.PROVIDER_VOXTRAL_REALTIME,
         )
-        assertEquals(5, ids.size)
+        assertEquals(6, ids.size)
     }
 
     @Test

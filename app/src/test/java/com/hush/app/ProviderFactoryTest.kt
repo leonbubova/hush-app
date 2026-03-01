@@ -56,19 +56,21 @@ class ProviderFactoryTest {
     }
 
     @Test
-    fun `allProviderIds contains all providers including local and moonshine`() {
+    fun `allProviderIds contains all providers including local, moonshine and voxtral realtime`() {
         val ids = ProviderFactory.allProviderIds
         assertTrue(ids.contains(ProviderConfig.PROVIDER_VOXTRAL))
+        assertTrue(ids.contains(ProviderConfig.PROVIDER_VOXTRAL_REALTIME))
         assertTrue(ids.contains(ProviderConfig.PROVIDER_OPENAI))
         assertTrue(ids.contains(ProviderConfig.PROVIDER_GROQ))
         assertTrue(ids.contains(ProviderConfig.PROVIDER_LOCAL))
         assertTrue(ids.contains(ProviderConfig.PROVIDER_MOONSHINE))
-        assertEquals(5, ids.size)
+        assertEquals(6, ids.size)
     }
 
     @Test
     fun `displayName returns correct names for all providers`() {
         assertEquals("Voxtral (Mistral)", ProviderFactory.displayName(ProviderConfig.PROVIDER_VOXTRAL))
+        assertEquals("Voxtral Realtime (Streaming)", ProviderFactory.displayName(ProviderConfig.PROVIDER_VOXTRAL_REALTIME))
         assertEquals("OpenAI Whisper", ProviderFactory.displayName(ProviderConfig.PROVIDER_OPENAI))
         assertEquals("Groq", ProviderFactory.displayName(ProviderConfig.PROVIDER_GROQ))
         assertEquals("Local (On-Device)", ProviderFactory.displayName(ProviderConfig.PROVIDER_LOCAL))
@@ -78,6 +80,17 @@ class ProviderFactoryTest {
     @Test
     fun `displayName returns raw ID for unknown provider`() {
         assertEquals("some_unknown", ProviderFactory.displayName("some_unknown"))
+    }
+
+    @Test
+    fun `create throws for voxtral realtime streaming provider`() {
+        val config = ProviderConfig.VoxtralRealtime(apiKey = "key")
+        try {
+            ProviderFactory.create(ProviderConfig.PROVIDER_VOXTRAL_REALTIME, config)
+            fail("Should throw for streaming provider")
+        } catch (e: IllegalStateException) {
+            assertTrue(e.message!!.contains("streaming"))
+        }
     }
 
     @Test

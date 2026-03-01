@@ -58,12 +58,25 @@ sealed class ProviderConfig {
         }
     }
 
+    data class VoxtralRealtime(
+        val apiKey: String = "",
+        val model: String = "voxtral-mini-transcribe-realtime-2602",
+        val endpoint: String = "wss://api.mistral.ai/v1/realtime",
+    ) : ProviderConfig() {
+        override fun toJson() = JSONObject().apply {
+            put("apiKey", apiKey)
+            put("model", model)
+            put("endpoint", endpoint)
+        }
+    }
+
     companion object {
         const val PROVIDER_VOXTRAL = "voxtral"
         const val PROVIDER_OPENAI = "openai"
         const val PROVIDER_GROQ = "groq"
         const val PROVIDER_LOCAL = "local"
         const val PROVIDER_MOONSHINE = "moonshine"
+        const val PROVIDER_VOXTRAL_REALTIME = "voxtral_realtime"
 
         fun fromJson(providerId: String, json: JSONObject): ProviderConfig = when (providerId) {
             PROVIDER_VOXTRAL -> Voxtral(
@@ -87,6 +100,11 @@ sealed class ProviderConfig {
             PROVIDER_MOONSHINE -> Moonshine(
                 model = json.optString("model", "tiny-streaming-en"),
             )
+            PROVIDER_VOXTRAL_REALTIME -> VoxtralRealtime(
+                apiKey = json.optString("apiKey", ""),
+                model = json.optString("model", "voxtral-mini-transcribe-realtime-2602"),
+                endpoint = json.optString("endpoint", "wss://api.mistral.ai/v1/realtime"),
+            )
             else -> Voxtral()
         }
 
@@ -96,6 +114,7 @@ sealed class ProviderConfig {
             PROVIDER_GROQ -> Groq()
             PROVIDER_LOCAL -> Local()
             PROVIDER_MOONSHINE -> Moonshine()
+            PROVIDER_VOXTRAL_REALTIME -> VoxtralRealtime()
             else -> Voxtral()
         }
     }

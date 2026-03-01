@@ -174,6 +174,7 @@ private fun ProviderConfigPanel(
             onDownloadModel = onDownloadModel,
             onDeleteModel = onDeleteModel,
         )
+        is ProviderConfig.VoxtralRealtime -> VoxtralRealtimeConfigPanel(config, onSave)
         is ProviderConfig.Moonshine -> MoonshineConfigPanel(
             config = config,
             onSave = onSave,
@@ -204,7 +205,46 @@ private fun VoxtralConfigPanel(
 
         ModelDropdown(
             selected = model,
-            options = listOf("voxtral-mini-latest"),
+            options = listOf("voxtral-mini-latest", "voxtral-mini-transcribe-26-02", "voxtral-mini-transcribe-25-07"),
+            onSelect = { model = it },
+        )
+
+        Spacer(Modifier.height(16.dp))
+
+        SaveButton(
+            enabled = apiKey != config.apiKey || model != config.model,
+            onClick = { onSave(config.copy(apiKey = apiKey.trim(), model = model)) },
+        )
+    }
+}
+
+@Composable
+private fun VoxtralRealtimeConfigPanel(
+    config: ProviderConfig.VoxtralRealtime,
+    onSave: (ProviderConfig) -> Unit,
+) {
+    var apiKey by remember(config) { mutableStateOf(config.apiKey) }
+    var model by remember(config) { mutableStateOf(config.model) }
+
+    ConfigSection(title = "Voxtral Realtime Configuration") {
+        Text(
+            "Cloud streaming via WebSocket. Requires Mistral API key.",
+            fontSize = 13.sp,
+            color = Color(0xFF6C63FF).copy(alpha = 0.8f),
+            modifier = Modifier.padding(bottom = 12.dp),
+        )
+
+        ApiKeyField(
+            value = apiKey,
+            onValueChange = { apiKey = it },
+            label = "Mistral API Key",
+        )
+
+        Spacer(Modifier.height(12.dp))
+
+        ModelDropdown(
+            selected = model,
+            options = listOf("voxtral-mini-transcribe-realtime-2602"),
             onSelect = { model = it },
         )
 

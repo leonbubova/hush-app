@@ -79,6 +79,7 @@ object ProviderRepository {
 
     val allProviderIds = listOf(
         ProviderConfig.PROVIDER_VOXTRAL,
+        ProviderConfig.PROVIDER_VOXTRAL_REALTIME,
         ProviderConfig.PROVIDER_OPENAI,
         ProviderConfig.PROVIDER_GROQ,
         ProviderConfig.PROVIDER_LOCAL,

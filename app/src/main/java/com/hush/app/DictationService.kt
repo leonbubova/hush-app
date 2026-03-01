@@ -16,7 +16,9 @@ import com.hush.app.transcription.ModelManager
 import com.hush.app.transcription.MoonshineProvider
 import com.hush.app.transcription.ProviderConfig
 import com.hush.app.transcription.ProviderFactory
+import com.hush.app.transcription.ProviderRepository
 import com.hush.app.transcription.TranscribeResult
+import com.hush.app.transcription.VoxtralRealtimeProvider
 import kotlinx.coroutines.*
 
 class DictationService : Service() {
@@ -46,6 +48,7 @@ class DictationService : Service() {
     // Streaming state
     private val mainHandler = Handler(Looper.getMainLooper())
     private var moonshineProvider: MoonshineProvider? = null
+    private var voxtralRealtimeProvider: VoxtralRealtimeProvider? = null
     private val accumulatedText = StringBuilder()
     private var streamingToExternalApp = false
 
@@ -152,11 +155,19 @@ class DictationService : Service() {
         }
     }
 
-    // --- Streaming (Moonshine) ---
+    // --- Streaming ---
 
     private fun startStreaming() {
+        val activeId = ProviderRepository.getActiveProviderId(this)
+        when (activeId) {
+            ProviderConfig.PROVIDER_MOONSHINE -> startMoonshineStreaming()
+            ProviderConfig.PROVIDER_VOXTRAL_REALTIME -> startVoxtralRealtimeStreaming()
+        }
+    }
+
+    private fun startMoonshineStreaming() {
         val modelManager = ModelManager(this)
-        val config = com.hush.app.transcription.ProviderRepository.getConfig(
+        val config = ProviderRepository.getConfig(
             this, ProviderConfig.PROVIDER_MOONSHINE
         ) as? ProviderConfig.Moonshine ?: ProviderConfig.Moonshine()
 
@@ -213,7 +224,6 @@ class DictationService : Service() {
         provider.onError = { message ->
             mainHandler.post {
                 Log.e(TAG, "Moonshine error: $message")
-                // Dismiss overlay explicitly first — safety net in case stopStreaming() throws
                 if (streamingToExternalApp) {
                     sendBroadcast(Intent(ACTION_OVERLAY_DISMISS).setPackage(packageName))
                 }
@@ -234,7 +244,79 @@ class DictationService : Service() {
         provider.start()
         updateState(DictationState.STREAMING)
 
-        // Auto-stop after 60s
+        autoStopJob = scope.launch {
+            delay(60_000)
+            if (isStreaming) {
+                withContext(Dispatchers.Main) { stopStreaming() }
+            }
+        }
+    }
+
+    private fun startVoxtralRealtimeStreaming() {
+        val config = ProviderRepository.getConfig(
+            this, ProviderConfig.PROVIDER_VOXTRAL_REALTIME
+        ) as? ProviderConfig.VoxtralRealtime ?: ProviderConfig.VoxtralRealtime()
+
+        accumulatedText.clear()
+        streamingToExternalApp = !isAppInForeground
+
+        val provider = VoxtralRealtimeProvider(config)
+
+        provider.onLineStarted = {
+            // No injection state to reset
+        }
+
+        provider.onLineTextChanged = { partialText ->
+            mainHandler.post {
+                val fullText = if (accumulatedText.isEmpty()) partialText
+                    else "$accumulatedText $partialText"
+                onStreamingTextChanged?.invoke(fullText)
+                if (streamingToExternalApp) {
+                    sendBroadcast(Intent(ACTION_OVERLAY_SHOW).setPackage(packageName).apply {
+                        putExtra(EXTRA_OVERLAY_TEXT, fullText)
+                    })
+                }
+            }
+        }
+
+        provider.onLineCompleted = { finalText ->
+            mainHandler.post {
+                if (accumulatedText.isNotEmpty()) accumulatedText.append(" ")
+                accumulatedText.append(finalText)
+
+                val fullText = accumulatedText.toString()
+                onStreamingTextChanged?.invoke(fullText)
+                if (streamingToExternalApp) {
+                    sendBroadcast(Intent(ACTION_OVERLAY_SHOW).setPackage(packageName).apply {
+                        putExtra(EXTRA_OVERLAY_TEXT, fullText)
+                    })
+                }
+            }
+        }
+
+        provider.onError = { message ->
+            mainHandler.post {
+                Log.e(TAG, "Voxtral Realtime error: $message")
+                if (streamingToExternalApp) {
+                    sendBroadcast(Intent(ACTION_OVERLAY_DISMISS).setPackage(packageName))
+                }
+                try {
+                    stopStreaming()
+                } catch (e: Exception) {
+                    Log.e(TAG, "Error in stopStreaming during error handler", e)
+                    isStreaming = false
+                    voxtralRealtimeProvider = null
+                }
+                updateState(DictationState.ERROR, message)
+            }
+        }
+
+        voxtralRealtimeProvider = provider
+        isStreaming = true
+        recordingStartMs = System.currentTimeMillis()
+        provider.start()
+        updateState(DictationState.STREAMING)
+
         autoStopJob = scope.launch {
             delay(60_000)
             if (isStreaming) {
@@ -251,6 +333,10 @@ class DictationService : Service() {
         moonshineProvider?.stop()
         moonshineProvider?.release()
         moonshineProvider = null
+
+        voxtralRealtimeProvider?.stop()
+        voxtralRealtimeProvider?.release()
+        voxtralRealtimeProvider = null
 
         val finalText = accumulatedText.toString().trim()
         if (finalText.isNotBlank()) {
@@ -328,6 +414,7 @@ class DictationService : Service() {
     override fun onDestroy() {
         scope.cancel()
         moonshineProvider?.release()
+        voxtralRealtimeProvider?.release()
         audioRecorder?.release()
         super.onDestroy()
     }

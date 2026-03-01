@@ -21,12 +21,15 @@ object ProviderFactory {
         ProviderConfig.PROVIDER_MOONSHINE -> throw IllegalStateException(
             "Moonshine is a streaming provider — use MoonshineProvider directly, not TranscriptionProvider"
         )
+        ProviderConfig.PROVIDER_VOXTRAL_REALTIME -> throw IllegalStateException(
+            "Voxtral Realtime is a streaming provider — use VoxtralRealtimeProvider directly, not TranscriptionProvider"
+        )
         else -> VoxtralProvider(config as? ProviderConfig.Voxtral ?: ProviderConfig.Voxtral())
     }
 
     fun isStreaming(context: Context): Boolean {
         val activeId = ProviderRepository.getActiveProviderId(context)
-        return activeId == ProviderConfig.PROVIDER_MOONSHINE
+        return activeId == ProviderConfig.PROVIDER_MOONSHINE || activeId == ProviderConfig.PROVIDER_VOXTRAL_REALTIME
     }
 
     val allProviderIds: List<String> = ProviderRepository.allProviderIds
@@ -37,6 +40,7 @@ object ProviderFactory {
         ProviderConfig.PROVIDER_GROQ -> "Groq"
         ProviderConfig.PROVIDER_LOCAL -> "Local (On-Device)"
         ProviderConfig.PROVIDER_MOONSHINE -> "Moonshine (Streaming)"
+        ProviderConfig.PROVIDER_VOXTRAL_REALTIME -> "Voxtral Realtime (Streaming)"
         else -> providerId
     }
 }

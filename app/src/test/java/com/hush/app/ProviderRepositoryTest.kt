@@ -76,10 +76,11 @@ class ProviderRepositoryTest {
     }
 
     @Test
-    fun `getAllConfigs returns configs for all 5 providers`() {
+    fun `getAllConfigs returns configs for all 6 providers`() {
         val configs = ProviderRepository.getAllConfigs(context)
-        assertEquals(5, configs.size)
+        assertEquals(6, configs.size)
         assertTrue(configs[ProviderConfig.PROVIDER_VOXTRAL] is ProviderConfig.Voxtral)
+        assertTrue(configs[ProviderConfig.PROVIDER_VOXTRAL_REALTIME] is ProviderConfig.VoxtralRealtime)
         assertTrue(configs[ProviderConfig.PROVIDER_OPENAI] is ProviderConfig.OpenAiWhisper)
         assertTrue(configs[ProviderConfig.PROVIDER_GROQ] is ProviderConfig.Groq)
         assertTrue(configs[ProviderConfig.PROVIDER_LOCAL] is ProviderConfig.Local)
@@ -119,14 +120,27 @@ class ProviderRepositoryTest {
     }
 
     @Test
-    fun `allProviderIds contains all 5 providers`() {
+    fun `allProviderIds contains all 6 providers`() {
         val ids = ProviderRepository.allProviderIds
-        assertEquals(5, ids.size)
+        assertEquals(6, ids.size)
         assertTrue(ids.contains(ProviderConfig.PROVIDER_VOXTRAL))
+        assertTrue(ids.contains(ProviderConfig.PROVIDER_VOXTRAL_REALTIME))
         assertTrue(ids.contains(ProviderConfig.PROVIDER_OPENAI))
         assertTrue(ids.contains(ProviderConfig.PROVIDER_GROQ))
         assertTrue(ids.contains(ProviderConfig.PROVIDER_LOCAL))
         assertTrue(ids.contains(ProviderConfig.PROVIDER_MOONSHINE))
+    }
+
+    @Test
+    fun `voxtral realtime provider config roundtrips`() {
+        val config = ProviderConfig.VoxtralRealtime(apiKey = "rt-key", model = "voxtral-mini-transcribe-realtime-2602")
+        ProviderRepository.saveConfig(context, ProviderConfig.PROVIDER_VOXTRAL_REALTIME, config)
+
+        val loaded = ProviderRepository.getConfig(context, ProviderConfig.PROVIDER_VOXTRAL_REALTIME)
+        assertTrue(loaded is ProviderConfig.VoxtralRealtime)
+        val rt = loaded as ProviderConfig.VoxtralRealtime
+        assertEquals("rt-key", rt.apiKey)
+        assertEquals("voxtral-mini-transcribe-realtime-2602", rt.model)
     }
 
     @Test
