@@ -2,8 +2,17 @@ import java.io.FileInputStream
 import java.util.Properties
 
 fun gitVersionName(): String {
+    // Fetch tags from remote so local builds never drift from GitHub releases
+    try {
+        ProcessBuilder("git", "fetch", "--tags", "--quiet")
+            .directory(rootDir)
+            .redirectErrorStream(true)
+            .start()
+            .waitFor()
+    } catch (_: Exception) { /* offline is fine */ }
+
     return try {
-        val process = ProcessBuilder("git", "describe", "--tags", "--abbrev=0")
+        val process = ProcessBuilder("git", "describe", "--tags", "--always")
             .directory(rootDir)
             .redirectErrorStream(true)
             .start()

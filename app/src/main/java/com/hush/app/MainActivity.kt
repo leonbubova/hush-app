@@ -287,7 +287,7 @@ fun HushScreen(
                 actions = {
                     if (BuildConfig.DEBUG) {
                         Text(
-                            "v${BuildConfig.VERSION_NAME}-dev",
+                            "${BuildConfig.VERSION_NAME}-dev",
                             fontSize = 11.sp,
                             color = Color.White.copy(alpha = 0.3f),
                             modifier = Modifier.padding(end = 12.dp),
@@ -752,7 +752,7 @@ fun HushDrawerContent(
     onAccessibilitySettings: () -> Unit = {},
 ) {
     ModalDrawerSheet(
-        modifier = Modifier.width(180.dp),
+        modifier = Modifier.width(220.dp),
         drawerContainerColor = Color(0xFF1A1A2E),
     ) {
         Spacer(Modifier.height(32.dp))
@@ -801,7 +801,7 @@ fun HushDrawerContent(
             onClick = onAccessibilitySettings,
         )
         Text(
-            text = if (BuildConfig.DEBUG) "v${BuildConfig.VERSION_NAME}-dev" else "v${BuildConfig.VERSION_NAME}",
+            text = if (BuildConfig.DEBUG) "${BuildConfig.VERSION_NAME}-dev" else BuildConfig.VERSION_NAME,
             fontSize = 11.sp,
             color = Color.White.copy(alpha = 0.3f),
             modifier = Modifier.padding(horizontal = 28.dp, vertical = 8.dp),
