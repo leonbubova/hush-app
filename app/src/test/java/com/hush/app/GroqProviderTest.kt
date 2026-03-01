@@ -93,6 +93,20 @@ class GroqProviderTest {
     }
 
     @Test
+    fun `429 with insufficient_quota returns billing error`() = runBlocking {
+        server.enqueue(MockResponse().setResponseCode(429).setBody(
+            """{"error": {"message": "You exceeded your current quota", "type": "insufficient_quota", "code": "insufficient_quota"}}"""
+        ))
+
+        val result = provider().transcribe(testFile)
+
+        assertTrue(result is TranscribeResult.Error)
+        val error = result as TranscribeResult.Error
+        assertEquals(429, error.code)
+        assertTrue(error.message.contains("billing"))
+    }
+
+    @Test
     fun `500 returns server error`() = runBlocking {
         server.enqueue(MockResponse().setResponseCode(500).setBody("Internal Server Error"))
 

@@ -632,8 +632,17 @@ private fun ApiKeyField(
     label: String,
 ) {
     val hasKey = value.isNotBlank()
-    var isEditing by remember(value) { mutableStateOf(!hasKey) }
-    var editValue by remember(value) { mutableStateOf("") }
+    var isEditing by remember { mutableStateOf(!hasKey) }
+    var editValue by remember { mutableStateOf("") }
+    var lastEmitted by remember { mutableStateOf(value) }
+
+    // Detect external config changes (e.g., switching provider tabs)
+    // but ignore changes we caused via onValueChange
+    if (value != lastEmitted) {
+        isEditing = !value.isNotBlank()
+        editValue = ""
+        lastEmitted = value
+    }
 
     if (!isEditing && hasKey) {
         Row(
@@ -662,6 +671,7 @@ private fun ApiKeyField(
             value = editValue,
             onValueChange = {
                 editValue = it
+                lastEmitted = it
                 onValueChange(it)
             },
             label = { Text(label) },

@@ -94,6 +94,20 @@ class OpenAiWhisperProviderTest {
     }
 
     @Test
+    fun `429 with insufficient_quota returns billing error`() = runBlocking {
+        server.enqueue(MockResponse().setResponseCode(429).setBody(
+            """{"error": {"message": "You exceeded your current quota", "type": "insufficient_quota", "code": "insufficient_quota"}}"""
+        ))
+
+        val result = provider().transcribe(testFile)
+
+        assertTrue(result is TranscribeResult.Error)
+        val error = result as TranscribeResult.Error
+        assertEquals(429, error.code)
+        assertTrue(error.message.contains("billing"))
+    }
+
+    @Test
     fun `request includes correct auth header and model`() = runBlocking {
         server.enqueue(MockResponse()
             .setResponseCode(200)

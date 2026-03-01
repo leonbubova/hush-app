@@ -68,7 +68,7 @@ class ModelManager(private val context: Context) {
                 displayName = "Whisper tiny.en INT8 (English, 136 MB)",
                 downloadUrl = "https://github.com/leonbubova/hush-app-models/releases/download/v0.2.0/whisper_tiny_en_q8.pte",
                 sizeBytes = 142_690_304L,
-                sha256 = "2668c50b6b82a624c26728d043ec8f4bee1662c37bdc7c2a2ceab055e86aa3da",
+                sha256 = "2b0de6b24fb9983a9140a6f90d3b8d83107291352d20ad32c9fc08815d65d510",
             ),
             ModelInfo(
                 id = "whisper-tiny-en-fp32",

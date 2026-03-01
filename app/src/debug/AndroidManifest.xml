@@ -6,6 +6,7 @@
             android:exported="true">
             <intent-filter>
                 <action android:name="com.hush.app.debug.TOGGLE_DICTATION" />
+                <action android:name="com.hush.app.debug.SWITCH_PROVIDER" />
             </intent-filter>
         </receiver>
     </application>

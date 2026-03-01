@@ -55,7 +55,7 @@ class GroqProvider(
             } else {
                 val message = when (response.code) {
                     401 -> "Invalid API key"
-                    429 -> "Rate limited — try again in a moment"
+                    429 -> parse429Error(responseBody)
                     in 500..599 -> "Server error (${response.code})"
                     else -> "API error ${response.code}"
                 }
