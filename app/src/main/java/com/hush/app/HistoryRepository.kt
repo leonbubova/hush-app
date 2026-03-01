@@ -41,7 +41,7 @@ object HistoryRepository {
         entries.add(0, text)
         while (entries.size > MAX_ENTRIES) entries.removeAt(entries.lastIndex)
         val arr = JSONArray(entries)
-        getEncryptedPrefs(context).edit().putString(KEY_HISTORY, arr.toString()).apply()
+        getEncryptedPrefs(context).edit().putString(KEY_HISTORY, arr.toString()).commit()
     }
 
     fun loadAll(context: Context): List<String> {
