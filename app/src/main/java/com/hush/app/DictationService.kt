@@ -343,20 +343,24 @@ class DictationService : Service() {
         autoStopJob = null
         isStreaming = false
 
+        // Capture partial text BEFORE stopping providers — once stopped, the text is gone
+        val pendingText = moonshineProvider?.getCurrentText()
+            ?: voxtralRealtimeProvider?.getCurrentText()
+            ?: ""
+
         moonshineProvider?.stop()
         moonshineProvider?.release()
         moonshineProvider = null
 
-        // Capture any pending Voxtral delta text before stopping
-        voxtralRealtimeProvider?.let { provider ->
-            val pendingText = provider.getCurrentText()
-            if (pendingText.isNotBlank() && accumulatedText.isEmpty()) {
-                accumulatedText.append(pendingText)
-            }
-        }
         voxtralRealtimeProvider?.stop()
         voxtralRealtimeProvider?.release()
         voxtralRealtimeProvider = null
+
+        // Always append pending partial text (the in-progress line the user saw)
+        if (pendingText.isNotBlank()) {
+            if (accumulatedText.isNotEmpty()) accumulatedText.append(" ")
+            accumulatedText.append(pendingText)
+        }
 
         val finalText = accumulatedText.toString().trim()
         if (finalText.isNotBlank()) {

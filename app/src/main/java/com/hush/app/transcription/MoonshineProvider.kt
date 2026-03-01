@@ -21,6 +21,7 @@ class MoonshineProvider {
     private var audioRecord: AudioRecord? = null
     private var captureThread: Thread? = null
     @Volatile private var isRunning = false
+    @Volatile private var lastPartialText = ""
 
     var onLineStarted: (() -> Unit)? = null
     var onLineTextChanged: ((String) -> Unit)? = null
@@ -41,12 +42,14 @@ class MoonshineProvider {
                     override fun onLineTextChanged(e: TranscriptEvent.LineTextChanged) {
                         val text = e.line.text ?: ""
                         Log.d(TAG, "Line text changed: $text")
+                        lastPartialText = text
                         this@MoonshineProvider.onLineTextChanged?.invoke(text)
                     }
 
                     override fun onLineCompleted(e: TranscriptEvent.LineCompleted) {
                         val text = e.line.text ?: ""
                         Log.d(TAG, "Line completed: $text")
+                        lastPartialText = ""
                         this@MoonshineProvider.onLineCompleted?.invoke(text)
                     }
 
@@ -125,8 +128,11 @@ class MoonshineProvider {
         Log.i(TAG, "Streaming stopped")
     }
 
+    fun getCurrentText(): String = lastPartialText
+
     fun release() {
         stop()
+        lastPartialText = ""
         transcriber = null
         onLineStarted = null
         onLineTextChanged = null
