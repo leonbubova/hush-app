@@ -30,9 +30,8 @@ screenshots/*_latest.png
 # Dev screenshots (local emulator captures)
 dev-screenshots/
 
-# Compiled gRPC proto files (regenerated from $ANDROID_HOME emulator proto)
-scripts/emulator_controller_pb2.py
-scripts/emulator_controller_pb2_grpc.py
+# Scripts (dev tooling, device-specific paths, may contain sensitive data)
+scripts/
 
 # Claude Code
 .claude/

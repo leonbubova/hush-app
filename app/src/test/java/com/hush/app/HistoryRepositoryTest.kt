@@ -17,11 +17,13 @@ class HistoryRepositoryTest {
     @Before
     fun setUp() {
         context = ApplicationProvider.getApplicationContext()
+        HistoryRepository.resetCachedPrefs()
     }
 
     @After
     fun tearDown() {
         HistoryRepository.clear(context)
+        HistoryRepository.resetCachedPrefs()
     }
 
     @Test

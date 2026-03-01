@@ -18,12 +18,14 @@ class DataExporterTest {
     @Before
     fun setUp() {
         context = ApplicationProvider.getApplicationContext()
+        HistoryRepository.resetCachedPrefs()
     }
 
     @After
     fun tearDown() {
         HistoryRepository.clear(context)
         UsageRepository.clearSessions(context)
+        HistoryRepository.resetCachedPrefs()
     }
 
     @Test

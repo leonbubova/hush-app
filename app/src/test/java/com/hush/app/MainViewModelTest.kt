@@ -37,6 +37,9 @@ class MainViewModelTest {
     @Before
     fun setUp() {
         app = ApplicationProvider.getApplicationContext()
+        // Reset singleton caches so tests get fresh SharedPreferences
+        HistoryRepository.resetCachedPrefs()
+        ProviderRepository.resetCachedPrefs()
         // Clear all relevant prefs before each test
         getEncryptedPrefs(app).edit().clear().apply()
         UsageRepository.clearSessions(app)
@@ -47,6 +50,8 @@ class MainViewModelTest {
     fun tearDown() {
         getEncryptedPrefs(app).edit().clear().apply()
         UsageRepository.clearSessions(app)
+        HistoryRepository.resetCachedPrefs()
+        ProviderRepository.resetCachedPrefs()
     }
 
     // ---- Init state ----

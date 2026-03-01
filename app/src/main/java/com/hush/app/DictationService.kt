@@ -240,6 +240,7 @@ class DictationService : Service() {
                 } catch (e: Exception) {
                     Log.e(TAG, "Error in stopStreaming during error handler", e)
                     isStreaming = false
+                    moonshineProvider?.release()
                     moonshineProvider = null
                 }
                 updateState(DictationState.ERROR, message)
@@ -316,6 +317,7 @@ class DictationService : Service() {
                 } catch (e: Exception) {
                     Log.e(TAG, "Error in stopStreaming during error handler", e)
                     isStreaming = false
+                    voxtralRealtimeProvider?.release()
                     voxtralRealtimeProvider = null
                 }
                 updateState(DictationState.ERROR, message)

@@ -22,6 +22,9 @@ class VoxtralRealtimeProvider(private val config: ProviderConfig.VoxtralRealtime
         private const val SAMPLE_RATE = 16000
         private const val CHUNK_DURATION_MS = 480
         private const val CHUNK_SIZE_BYTES = SAMPLE_RATE * 2 * CHUNK_DURATION_MS / 1000 // 15360 bytes (PCM16)
+        private val client = OkHttpClient.Builder()
+            .readTimeout(0, TimeUnit.MILLISECONDS)
+            .build()
     }
 
     private val mainHandler = Handler(Looper.getMainLooper())
@@ -42,10 +45,6 @@ class VoxtralRealtimeProvider(private val config: ProviderConfig.VoxtralRealtime
             onError?.invoke("Mistral API key not configured — go to Settings")
             return
         }
-
-        val client = OkHttpClient.Builder()
-            .readTimeout(0, TimeUnit.MILLISECONDS)
-            .build()
 
         val wsUrl = "${config.endpoint}?model=${config.model}"
         val request = Request.Builder()
@@ -167,6 +166,7 @@ class VoxtralRealtimeProvider(private val config: ProviderConfig.VoxtralRealtime
     fun getCurrentText(): String = currentLine.toString()
 
     fun stop() {
+        mainHandler.removeCallbacksAndMessages(null)
         isRunning = false
         captureThread?.join(2000)
         captureThread = null

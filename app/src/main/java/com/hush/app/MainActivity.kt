@@ -46,6 +46,8 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.hush.app.ui.theme.HushTheme
 import kotlinx.coroutines.launch
@@ -239,6 +241,11 @@ fun HushScreen(
     val isActive = isRecording || isStreaming
     val isProcessing = state.dictationState == DictationService.DictationState.PROCESSING
 
+    val lifecycleOwner = LocalLifecycleOwner.current
+    val lifecycleState by lifecycleOwner.lifecycle.currentStateFlow
+        .collectAsStateWithLifecycle()
+    val blobsActive = isActive && lifecycleState.isAtLeast(Lifecycle.State.RESUMED)
+
     val bgColor by animateColorAsState(
         targetValue = when {
             isActive -> Color(0xFF1A1A2E)
@@ -290,7 +297,7 @@ fun HushScreen(
             var micCenterY by remember { mutableFloatStateOf(0f) }
 
             // Blobs behind everything, centered on mic button
-            AnimatedBlobs(isRecording = isActive, centerYPx = micCenterY)
+            AnimatedBlobs(isRecording = blobsActive, centerYPx = micCenterY)
 
             // Content on top
             Column(

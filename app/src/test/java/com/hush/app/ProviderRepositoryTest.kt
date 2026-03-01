@@ -34,12 +34,14 @@ class ProviderRepositoryTest {
     @Before
     fun setUp() {
         context = ApplicationProvider.getApplicationContext()
+        ProviderRepository.resetCachedPrefs()
         getEncryptedPrefs().edit().clear().apply()
     }
 
     @After
     fun tearDown() {
         getEncryptedPrefs().edit().clear().apply()
+        ProviderRepository.resetCachedPrefs()
     }
 
     @Test

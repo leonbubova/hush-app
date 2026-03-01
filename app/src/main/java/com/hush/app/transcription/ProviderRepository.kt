@@ -3,6 +3,7 @@ package com.hush.app.transcription
 import android.content.Context
 import android.content.SharedPreferences
 import android.util.Log
+import androidx.annotation.VisibleForTesting
 import androidx.security.crypto.EncryptedSharedPreferences
 import androidx.security.crypto.MasterKey
 import org.json.JSONObject
@@ -15,17 +16,26 @@ object ProviderRepository {
     private const val KEY_PROVIDER_CFG_PREFIX = "provider_cfg_"
     private const val LEGACY_API_KEY = "voxtral_api_key"
 
+    @Volatile private var cachedPrefs: SharedPreferences? = null
+
+    @VisibleForTesting
+    fun resetCachedPrefs() { cachedPrefs = null }
+
     private fun getEncryptedPrefs(context: Context): SharedPreferences {
-        val masterKey = MasterKey.Builder(context)
-            .setKeyScheme(MasterKey.KeyScheme.AES256_GCM)
-            .build()
-        return EncryptedSharedPreferences.create(
-            context,
-            PREFS_NAME,
-            masterKey,
-            EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
-            EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM,
-        )
+        cachedPrefs?.let { return it }
+        synchronized(this) {
+            cachedPrefs?.let { return it }
+            val masterKey = MasterKey.Builder(context)
+                .setKeyScheme(MasterKey.KeyScheme.AES256_GCM)
+                .build()
+            return EncryptedSharedPreferences.create(
+                context,
+                PREFS_NAME,
+                masterKey,
+                EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
+                EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM,
+            ).also { cachedPrefs = it }
+        }
     }
 
     fun getActiveProviderId(context: Context): String {

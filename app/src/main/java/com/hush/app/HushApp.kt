@@ -13,6 +13,13 @@ class HushApp : Application() {
     override fun onCreate() {
         super.onCreate()
         createNotificationChannel()
+        cleanOrphanedAudioFiles()
+    }
+
+    private fun cleanOrphanedAudioFiles() {
+        cacheDir.listFiles()?.filter {
+            it.name.startsWith("recording_") && it.extension == "m4a"
+        }?.forEach { it.delete() }
     }
 
     private fun createNotificationChannel() {

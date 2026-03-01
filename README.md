@@ -204,8 +204,8 @@ RELEASE_KEY_PASSWORD=your-password
 Install on device:
 
 ```bash
-# Debug (installs alongside release)
-adb install -r app/build/outputs/apk/debug/app-debug.apk
+# Debug (arm64 ABI split)
+adb install -r app/build/outputs/apk/debug/app-arm64-v8a-debug.apk
 
 # Release
 adb install -r app/build/outputs/apk/release/app-release.apk
