@@ -19,7 +19,6 @@ import com.hush.app.transcription.ProviderRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
-import org.json.JSONArray
 import androidx.lifecycle.viewModelScope
 
 class MainViewModel(application: Application) : AndroidViewModel(application) {
@@ -56,24 +55,13 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             service?.onStateChanged = { dictationState, text ->
                 _state.value = when (dictationState) {
                     DictationService.DictationState.DONE -> {
-                        val newText = text ?: ""
-                        if (newText.isNotBlank()) {
-                            val updated = listOf(newText) + _state.value.history
-                            saveHistory(updated)
-                            _state.value.copy(
-                                dictationState = dictationState,
-                                history = updated,
-                                errorMessage = "",
-                                streamingText = "",
-                                usageSessions = UsageRepository.loadSessions(getApplication()),
-                            )
-                        } else {
-                            _state.value.copy(
-                                dictationState = dictationState,
-                                errorMessage = "",
-                                streamingText = "",
-                            )
-                        }
+                        _state.value.copy(
+                            dictationState = dictationState,
+                            history = HistoryRepository.loadAll(getApplication()),
+                            errorMessage = "",
+                            streamingText = "",
+                            usageSessions = UsageRepository.loadSessions(getApplication()),
+                        )
                     }
                     DictationService.DictationState.ERROR -> _state.value.copy(
                         dictationState = dictationState,
@@ -160,7 +148,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         _state.value = _state.value.copy(
             activeProviderId = activeId,
             providerConfigs = configs,
-            history = loadHistory(),
+            history = HistoryRepository.loadAll(application),
             accessibilityEnabled = isAccessibilityEnabled(),
             usageSessions = UsageRepository.loadSessions(application),
         )
@@ -224,22 +212,14 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     fun clearHistory() {
-        val context = getApplication<Application>()
-        getEncryptedPrefs(context).edit().remove("history").apply()
+        HistoryRepository.clear(getApplication())
         _state.value = _state.value.copy(history = emptyList())
     }
 
-    private fun loadHistory(): List<String> {
-        val context = getApplication<Application>()
-        val json = getEncryptedPrefs(context).getString("history", null) ?: return emptyList()
-        val arr = JSONArray(json)
-        return (0 until arr.length()).map { arr.getString(it) }
-    }
-
-    private fun saveHistory(history: List<String>) {
-        val context = getApplication<Application>()
-        val arr = JSONArray(history)
-        getEncryptedPrefs(context).edit().putString("history", arr.toString()).apply()
+    fun refreshHistory() {
+        _state.value = _state.value.copy(
+            history = HistoryRepository.loadAll(getApplication()),
+        )
     }
 
     fun refreshAccessibilityStatus() {

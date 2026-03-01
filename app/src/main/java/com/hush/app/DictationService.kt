@@ -137,6 +137,7 @@ class DictationService : Service() {
                             if (result.text.isNotBlank()) {
                                 val wordCount = result.text.trim().split("\\s+".toRegex()).size
                                 UsageRepository.recordSession(this@DictationService, recordingStartMs, durationSeconds, wordCount)
+                                HistoryRepository.addEntry(this@DictationService, result.text)
                             }
                             copyToClipboard(result.text)
                             sendBroadcast(Intent(HushAccessibilityService.ACTION_INJECT_TEXT).setPackage(packageName))
@@ -359,6 +360,7 @@ class DictationService : Service() {
             val durationSeconds = ((System.currentTimeMillis() - recordingStartMs) / 1000).toInt()
             val wordCount = finalText.split("\\s+".toRegex()).size
             UsageRepository.recordSession(this, recordingStartMs, durationSeconds, wordCount)
+            HistoryRepository.addEntry(this, finalText)
             copyToClipboard(finalText)
         }
 

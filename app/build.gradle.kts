@@ -53,6 +53,11 @@ android {
     buildTypes {
         debug {
             applicationIdSuffix = ".debug"
+            packaging {
+                jniLibs {
+                    useLegacyPackaging = true
+                }
+            }
         }
         release {
             isMinifyEnabled = false

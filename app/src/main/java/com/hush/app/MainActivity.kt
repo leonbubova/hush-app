@@ -137,6 +137,7 @@ class MainActivity : ComponentActivity() {
             viewModel.startServiceIfNeeded()
         }
         viewModel.refreshAccessibilityStatus()
+        viewModel.refreshHistory()
         viewModel.setAppForeground(true)
     }
 
