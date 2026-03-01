@@ -205,7 +205,7 @@ private fun VoxtralConfigPanel(
 
         ModelDropdown(
             selected = model,
-            options = listOf("voxtral-mini-latest", "voxtral-mini-transcribe-26-02", "voxtral-mini-transcribe-25-07"),
+            options = listOf("voxtral-mini-latest", "voxtral-mini-2602", "voxtral-mini-2507"),
             onSelect = { model = it },
         )
 
@@ -244,7 +244,7 @@ private fun VoxtralRealtimeConfigPanel(
 
         ModelDropdown(
             selected = model,
-            options = listOf("voxtral-mini-transcribe-realtime-2602"),
+            options = listOf("voxtral-mini-transcribe-realtime-2602", "voxtral-mini-transcribe-realtime-latest"),
             onSelect = { model = it },
         )
 
@@ -320,7 +320,7 @@ private fun GroqConfigPanel(
 
         ModelDropdown(
             selected = model,
-            options = listOf("whisper-large-v3-turbo", "whisper-large-v3", "distil-whisper-large-v3-en"),
+            options = listOf("whisper-large-v3-turbo", "whisper-large-v3"),
             onSelect = { model = it },
         )
 
