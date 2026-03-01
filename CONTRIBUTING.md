@@ -57,7 +57,7 @@ Use the [bug report template](.github/ISSUE_TEMPLATE/bug_report.md) and include:
 
 ## Security Issues
 
-**Do NOT open public issues for security vulnerabilities.** Please use [GitHub's private vulnerability reporting](https://github.com/leonbubova/hush-app/security/advisories/new) instead.
+Please report security vulnerabilities via [GitHub Issues](https://github.com/leonbubova/hush-app/issues).
 
 ## Code Style
 
