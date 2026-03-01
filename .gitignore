@@ -9,6 +9,7 @@ local.properties
 # IDE
 .idea/
 *.iml
+.kotlin/
 
 # OS
 .DS_Store
