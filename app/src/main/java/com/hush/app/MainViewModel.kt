@@ -46,11 +46,13 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     private var service: DictationService? = null
     private var bound = false
+    private var pendingForeground = false
 
     private val connection = object : ServiceConnection {
         override fun onServiceConnected(name: ComponentName?, binder: IBinder?) {
             val localBinder = binder as DictationService.LocalBinder
             service = localBinder.getService()
+            service?.isAppInForeground = pendingForeground
             bound = true
             service?.onStateChanged = { dictationState, text ->
                 _state.value = when (dictationState) {
@@ -184,6 +186,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     fun setAppForeground(foreground: Boolean) {
+        pendingForeground = foreground
         service?.isAppInForeground = foreground
     }
 
