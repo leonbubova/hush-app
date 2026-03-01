@@ -82,8 +82,8 @@ class OpenAiWhisperProvider(
         private const val ENDPOINT = "https://api.openai.com/v1/audio/transcriptions"
         private val client = OkHttpClient.Builder()
             .connectTimeout(30, TimeUnit.SECONDS)
-            .readTimeout(60, TimeUnit.SECONDS)
-            .writeTimeout(60, TimeUnit.SECONDS)
+            .readTimeout(120, TimeUnit.SECONDS)
+            .writeTimeout(120, TimeUnit.SECONDS)
             .build()
     }
 }

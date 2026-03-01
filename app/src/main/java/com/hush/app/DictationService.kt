@@ -25,6 +25,7 @@ class DictationService : Service() {
 
     companion object {
         private const val TAG = "DictationService"
+        private const val MAX_RECORDING_MS = 300_000L // 5 minutes
         const val ACTION_TOGGLE = "com.hush.TOGGLE"
         const val ACTION_OVERLAY_SHOW = "com.hush.ACTION_OVERLAY_SHOW"
         const val ACTION_OVERLAY_DISMISS = "com.hush.ACTION_OVERLAY_DISMISS"
@@ -102,7 +103,7 @@ class DictationService : Service() {
             recordingStartMs = System.currentTimeMillis()
             updateState(DictationState.RECORDING)
             autoStopJob = scope.launch {
-                delay(60_000)
+                delay(MAX_RECORDING_MS)
                 if (isRecording) {
                     withContext(Dispatchers.Main) { stopRecording() }
                 }
@@ -250,7 +251,7 @@ class DictationService : Service() {
         updateState(DictationState.STREAMING)
 
         autoStopJob = scope.launch {
-            delay(60_000)
+            delay(MAX_RECORDING_MS)
             if (isStreaming) {
                 withContext(Dispatchers.Main) { stopStreaming() }
             }
@@ -326,7 +327,7 @@ class DictationService : Service() {
         updateState(DictationState.STREAMING)
 
         autoStopJob = scope.launch {
-            delay(60_000)
+            delay(MAX_RECORDING_MS)
             if (isStreaming) {
                 withContext(Dispatchers.Main) { stopStreaming() }
             }
