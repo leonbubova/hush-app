@@ -334,6 +334,13 @@ class DictationService : Service() {
         moonshineProvider?.release()
         moonshineProvider = null
 
+        // Capture any pending Voxtral delta text before stopping
+        voxtralRealtimeProvider?.let { provider ->
+            val pendingText = provider.getCurrentText()
+            if (pendingText.isNotBlank() && accumulatedText.isEmpty()) {
+                accumulatedText.append(pendingText)
+            }
+        }
         voxtralRealtimeProvider?.stop()
         voxtralRealtimeProvider?.release()
         voxtralRealtimeProvider = null

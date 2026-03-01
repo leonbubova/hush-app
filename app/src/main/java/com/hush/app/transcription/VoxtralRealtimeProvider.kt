@@ -164,6 +164,8 @@ class VoxtralRealtimeProvider(private val config: ProviderConfig.VoxtralRealtime
         }, "VoxtralRealtimeCapture").apply { start() }
     }
 
+    fun getCurrentText(): String = currentLine.toString()
+
     fun stop() {
         isRunning = false
         captureThread?.join(2000)
