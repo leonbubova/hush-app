@@ -29,6 +29,7 @@ class DictationService : Service() {
         const val ACTION_OVERLAY_SHOW = "com.hush.ACTION_OVERLAY_SHOW"
         const val ACTION_OVERLAY_DISMISS = "com.hush.ACTION_OVERLAY_DISMISS"
         const val EXTRA_OVERLAY_TEXT = "com.hush.EXTRA_OVERLAY_TEXT"
+        const val EXTRA_OVERLAY_MODEL = "com.hush.EXTRA_OVERLAY_MODEL"
         const val NOTIF_ID = 1
     }
 
@@ -51,6 +52,7 @@ class DictationService : Service() {
     private var voxtralRealtimeProvider: VoxtralRealtimeProvider? = null
     private val accumulatedText = StringBuilder()
     private var streamingToExternalApp = false
+    private var streamingModelLabel = ""
 
     var isAppInForeground = false
 
@@ -179,6 +181,7 @@ class DictationService : Service() {
 
         accumulatedText.clear()
         streamingToExternalApp = !isAppInForeground
+        streamingModelLabel = config.model
 
         val provider = MoonshineProvider()
         try {
@@ -201,6 +204,7 @@ class DictationService : Service() {
                 if (streamingToExternalApp) {
                     sendBroadcast(Intent(ACTION_OVERLAY_SHOW).setPackage(packageName).apply {
                         putExtra(EXTRA_OVERLAY_TEXT, fullText)
+                        putExtra(EXTRA_OVERLAY_MODEL, streamingModelLabel)
                     })
                 }
             }
@@ -216,6 +220,7 @@ class DictationService : Service() {
                 if (streamingToExternalApp) {
                     sendBroadcast(Intent(ACTION_OVERLAY_SHOW).setPackage(packageName).apply {
                         putExtra(EXTRA_OVERLAY_TEXT, fullText)
+                        putExtra(EXTRA_OVERLAY_MODEL, streamingModelLabel)
                     })
                 }
             }
@@ -259,6 +264,7 @@ class DictationService : Service() {
 
         accumulatedText.clear()
         streamingToExternalApp = !isAppInForeground
+        streamingModelLabel = config.model
 
         val provider = VoxtralRealtimeProvider(config)
 
@@ -274,6 +280,7 @@ class DictationService : Service() {
                 if (streamingToExternalApp) {
                     sendBroadcast(Intent(ACTION_OVERLAY_SHOW).setPackage(packageName).apply {
                         putExtra(EXTRA_OVERLAY_TEXT, fullText)
+                        putExtra(EXTRA_OVERLAY_MODEL, streamingModelLabel)
                     })
                 }
             }
@@ -289,6 +296,7 @@ class DictationService : Service() {
                 if (streamingToExternalApp) {
                     sendBroadcast(Intent(ACTION_OVERLAY_SHOW).setPackage(packageName).apply {
                         putExtra(EXTRA_OVERLAY_TEXT, fullText)
+                        putExtra(EXTRA_OVERLAY_MODEL, streamingModelLabel)
                     })
                 }
             }

@@ -26,7 +26,8 @@ class HushAccessibilityService : AccessibilityService() {
             when (intent?.action) {
                 DictationService.ACTION_OVERLAY_SHOW -> {
                     val text = intent.getStringExtra(DictationService.EXTRA_OVERLAY_TEXT) ?: return
-                    overlayManager.show(text)
+                    val model = intent.getStringExtra(DictationService.EXTRA_OVERLAY_MODEL) ?: ""
+                    overlayManager.show(text, model)
                 }
                 DictationService.ACTION_OVERLAY_DISMISS -> {
                     overlayManager.dismiss()

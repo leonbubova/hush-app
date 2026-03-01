@@ -22,14 +22,18 @@ class StreamingOverlayManager(private val service: AccessibilityService) {
     private val windowManager = service.getSystemService(AccessibilityService.WINDOW_SERVICE) as WindowManager
     private var overlayView: LinearLayout? = null
     private var textView: TextView? = null
+    private var tagView: TextView? = null
     private val watchdogHandler = Handler(Looper.getMainLooper())
     private val watchdogRunnable = Runnable { dismiss() }
 
-    fun show(text: String) {
+    fun show(text: String, model: String = "") {
         if (overlayView == null) {
             createOverlay()
         }
         textView?.text = text
+        if (model.isNotEmpty()) {
+            tagView?.text = "Hush · $model"
+        }
         resetWatchdog()
     }
 
@@ -44,6 +48,7 @@ class StreamingOverlayManager(private val service: AccessibilityService) {
         }
         overlayView = null
         textView = null
+        tagView = null
     }
 
     private fun resetWatchdog() {
@@ -92,6 +97,7 @@ class StreamingOverlayManager(private val service: AccessibilityService) {
         container.addView(tag)
 
         textView = tv
+        tagView = tag
 
         val params = WindowManager.LayoutParams(
             WindowManager.LayoutParams.MATCH_PARENT,
