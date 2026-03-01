@@ -284,6 +284,16 @@ fun HushScreen(
                         }
                     }
                 },
+                actions = {
+                    if (BuildConfig.DEBUG) {
+                        Text(
+                            "v${BuildConfig.VERSION_NAME}-dev",
+                            fontSize = 11.sp,
+                            color = Color.White.copy(alpha = 0.3f),
+                            modifier = Modifier.padding(end = 12.dp),
+                        )
+                    }
+                },
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent)
             )
         }
@@ -417,14 +427,14 @@ fun HushScreen(
                     ) {
                         Column(modifier = Modifier.weight(1f)) {
                             Text(
-                                "Enable background shortcut",
+                                "Enable Hush accessibility service",
                                 fontSize = 14.sp,
                                 fontWeight = FontWeight.SemiBold,
                                 color = Color.White,
                             )
                             Spacer(Modifier.height(4.dp))
                             Text(
-                                "Turn on accessibility to use volume double-tap from any app",
+                                "Toggle on \"Use Hush\" in accessibility settings to dictate from any app",
                                 fontSize = 12.sp,
                                 color = Color.White.copy(alpha = 0.5f),
                             )
@@ -742,6 +752,7 @@ fun HushDrawerContent(
     onAccessibilitySettings: () -> Unit = {},
 ) {
     ModalDrawerSheet(
+        modifier = Modifier.width(180.dp),
         drawerContainerColor = Color(0xFF1A1A2E),
     ) {
         Spacer(Modifier.height(32.dp))
@@ -789,7 +800,13 @@ fun HushDrawerContent(
             selected = false,
             onClick = onAccessibilitySettings,
         )
-        Spacer(Modifier.height(24.dp))
+        Text(
+            text = if (BuildConfig.DEBUG) "v${BuildConfig.VERSION_NAME}-dev" else "v${BuildConfig.VERSION_NAME}",
+            fontSize = 11.sp,
+            color = Color.White.copy(alpha = 0.3f),
+            modifier = Modifier.padding(horizontal = 28.dp, vertical = 8.dp),
+        )
+        Spacer(Modifier.height(16.dp))
     }
 }
 
