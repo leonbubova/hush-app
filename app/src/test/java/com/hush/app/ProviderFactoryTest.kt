@@ -73,7 +73,7 @@ class ProviderFactoryTest {
         assertEquals("Voxtral Realtime (Streaming)", ProviderFactory.displayName(ProviderConfig.PROVIDER_VOXTRAL_REALTIME))
         assertEquals("OpenAI Whisper", ProviderFactory.displayName(ProviderConfig.PROVIDER_OPENAI))
         assertEquals("Groq", ProviderFactory.displayName(ProviderConfig.PROVIDER_GROQ))
-        assertEquals("Local (On-Device)", ProviderFactory.displayName(ProviderConfig.PROVIDER_LOCAL))
+        assertEquals("Local (Deprecated)", ProviderFactory.displayName(ProviderConfig.PROVIDER_LOCAL))
         assertEquals("Moonshine (Streaming)", ProviderFactory.displayName(ProviderConfig.PROVIDER_MOONSHINE))
     }
 

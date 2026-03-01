@@ -17,7 +17,7 @@ class LocalProvider(
     private val context: Context,
 ) : TranscriptionProvider {
 
-    override val displayName = "Local (On-Device)"
+    override val displayName = "Local (Deprecated)"
     override val id = PROVIDER_LOCAL
     override val requiresNetwork = false
 

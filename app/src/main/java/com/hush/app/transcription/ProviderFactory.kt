@@ -38,7 +38,7 @@ object ProviderFactory {
         ProviderConfig.PROVIDER_VOXTRAL -> "Voxtral (Mistral)"
         ProviderConfig.PROVIDER_OPENAI -> "OpenAI Whisper"
         ProviderConfig.PROVIDER_GROQ -> "Groq"
-        ProviderConfig.PROVIDER_LOCAL -> "Local (On-Device)"
+        ProviderConfig.PROVIDER_LOCAL -> "Local (Deprecated)"
         ProviderConfig.PROVIDER_MOONSHINE -> "Moonshine (Streaming)"
         ProviderConfig.PROVIDER_VOXTRAL_REALTIME -> "Voxtral Realtime (Streaming)"
         else -> providerId

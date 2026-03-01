@@ -22,7 +22,7 @@ class LocalProviderTest {
     fun `provider has correct metadata`() {
         val p = provider()
         assertEquals(ProviderConfig.PROVIDER_LOCAL, p.id)
-        assertEquals("Local (On-Device)", p.displayName)
+        assertEquals("Local (Deprecated)", p.displayName)
         assertFalse(p.requiresNetwork)
     }
 
@@ -63,7 +63,7 @@ class LocalProviderTest {
 
     @Test
     fun `displayName is correct`() {
-        assertEquals("Local (On-Device)", provider().displayName)
+        assertEquals("Local (Deprecated)", provider().displayName)
     }
 
     @Test

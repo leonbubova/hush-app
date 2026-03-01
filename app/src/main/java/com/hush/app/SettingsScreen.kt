@@ -403,11 +403,11 @@ private fun LocalConfigPanel(
     val modelStatus = modelStatuses[model] ?: ModelStatus.NOT_DOWNLOADED
     val progress = modelDownloadProgress[model] ?: 0f
 
-    ConfigSection(title = "Local Configuration") {
+    ConfigSection(title = "Local Configuration (Deprecated)") {
         Text(
-            "No API key needed. Runs entirely on your device.",
+            "Regularly crashes the app. Use Moonshine instead for on-device transcription.",
             fontSize = 13.sp,
-            color = Color(0xFF6C63FF).copy(alpha = 0.8f),
+            color = Color(0xFFFF6B6B),
             modifier = Modifier.padding(bottom = 12.dp),
         )
 
