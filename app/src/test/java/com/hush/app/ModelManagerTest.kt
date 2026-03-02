@@ -277,6 +277,81 @@ class ModelManagerTest {
         assertTrue(statuses.containsKey("tiny-streaming-en"))
     }
 
+    // --- Moonshine cleanup tests ---
+
+    @Test
+    fun `cleanOrphanedModels deletes incomplete moonshine model dir`() {
+        val info = ModelManager.getMoonshineModelInfo("tiny-streaming-en")!!
+        val dir = File(manager.getModelsDir(), "moonshine/${info.dirName}")
+        dir.mkdirs()
+        // Create only 3 of 7 components
+        info.components.take(3).forEach { File(dir, it).writeText("data") }
+
+        manager.cleanOrphanedModels()
+
+        assertFalse(dir.exists())
+    }
+
+    @Test
+    fun `cleanOrphanedModels keeps complete moonshine model dir`() {
+        val info = ModelManager.getMoonshineModelInfo("tiny-streaming-en")!!
+        val dir = File(manager.getModelsDir(), "moonshine/${info.dirName}")
+        dir.mkdirs()
+        info.components.forEach { File(dir, it).writeText("data") }
+
+        manager.cleanOrphanedModels()
+
+        assertTrue(dir.exists())
+        info.components.forEach { assertTrue(File(dir, it).exists()) }
+
+        dir.deleteRecursively()
+    }
+
+    @Test
+    fun `cleanOrphanedModels deletes orphaned moonshine model dir`() {
+        val moonshineDir = File(manager.getModelsDir(), "moonshine")
+        val orphanedDir = File(moonshineDir, "unknown-model-xyz")
+        orphanedDir.mkdirs()
+        File(orphanedDir, "some_file.ort").writeText("data")
+
+        manager.cleanOrphanedModels()
+
+        assertFalse(orphanedDir.exists())
+    }
+
+    @Test
+    fun `cleanOrphanedModels deletes tmp files inside moonshine model dir`() {
+        val info = ModelManager.getMoonshineModelInfo("tiny-streaming-en")!!
+        val dir = File(manager.getModelsDir(), "moonshine/${info.dirName}")
+        dir.mkdirs()
+        // Create all real components + some .tmp files
+        info.components.forEach { File(dir, it).writeText("data") }
+        File(dir, "encoder.ort.tmp").writeText("partial")
+        File(dir, "decoder_kv.ort.tmp").writeText("partial")
+
+        manager.cleanOrphanedModels()
+
+        // Real files kept, tmp files removed
+        assertTrue(dir.exists())
+        info.components.forEach { assertTrue(File(dir, it).exists()) }
+        assertFalse(File(dir, "encoder.ort.tmp").exists())
+        assertFalse(File(dir, "decoder_kv.ort.tmp").exists())
+
+        dir.deleteRecursively()
+    }
+
+    @Test
+    fun `cleanOrphanedModels deletes stray files in moonshine dir`() {
+        val moonshineDir = File(manager.getModelsDir(), "moonshine")
+        moonshineDir.mkdirs()
+        val strayFile = File(moonshineDir, "leftover.tmp")
+        strayFile.writeText("stray data")
+
+        manager.cleanOrphanedModels()
+
+        assertFalse(strayFile.exists())
+    }
+
     @Test
     fun `refreshStatuses updates status to READY when file exists`() {
         val modelsDir = manager.getModelsDir()
