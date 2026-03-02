@@ -1,14 +1,4 @@
 title = "Hush App Secret Scanner"
 
-# 300+ default rules cover API keys, tokens, private keys, passwords in config files
 [extend]
 useDefault = true
-
-# Paths that are safe to ignore
-[allowlist]
-description = "Safe paths"
-paths = [
-    '''\.gitleaks\.toml''',
-    '''app/src/test/''',
-    '''app/src/androidTest/''',
-]
