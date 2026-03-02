@@ -263,6 +263,8 @@ Models are exported using [`optimum-executorch`](https://github.com/huggingface/
 | `WhisperTokenizerTest` | 12 | BPE decoding, EOS/special token filtering, vocab loading, known phrases |
 | `MainViewModelTest` | 22 | Init state, navigation, provider management, history, usage, service toggle |
 | `ProviderRepositoryTest` | 10 | Active provider, config roundtrip, migration, malformed JSON, all configs |
+| `PostProcessorConfigTest` | 5 | Default values, JSON round-trip, missing fields, empty JSON |
+| `TextPostProcessorTest` | 14 | MockWebServer: Anthropic/OpenAI success, headers, errors, fallback, trimming |
 
 ### Instrumented tests (emulator needed)
 
