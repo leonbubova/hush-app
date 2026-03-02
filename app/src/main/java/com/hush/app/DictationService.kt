@@ -153,9 +153,11 @@ class DictationService : Service() {
                                 UsageRepository.recordSession(this@DictationService, recordingStartMs, durationSeconds, wordCount)
                                 HistoryRepository.addEntry(this@DictationService, result.text)
                                 copyToClipboard(result.text)
-                                sendBroadcast(Intent(HushAccessibilityService.ACTION_INJECT_TEXT).setPackage(packageName).apply {
-                                    putExtra(EXTRA_WORD_COUNT, wordCount)
-                                })
+                                if (!isAppInForeground) {
+                                    sendBroadcast(Intent(HushAccessibilityService.ACTION_INJECT_TEXT).setPackage(packageName).apply {
+                                        putExtra(EXTRA_WORD_COUNT, wordCount)
+                                    })
+                                }
                             } else {
                                 sendStatusPill("DONE", "Done \u00b7 no speech detected")
                             }
