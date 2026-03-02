@@ -46,6 +46,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
+import com.hush.app.transcription.ErrorMessages
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -84,7 +85,7 @@ class MainActivity : ComponentActivity() {
             contentResolver.openOutputStream(uri)?.use { it.write(json.toByteArray()) }
             android.widget.Toast.makeText(this, "Data exported", android.widget.Toast.LENGTH_SHORT).show()
         } catch (e: Exception) {
-            android.widget.Toast.makeText(this, "Export failed: ${e.message}", android.widget.Toast.LENGTH_SHORT).show()
+            android.widget.Toast.makeText(this, ErrorMessages.exportFailed(), android.widget.Toast.LENGTH_SHORT).show()
         }
     }
 
@@ -102,7 +103,7 @@ class MainActivity : ComponentActivity() {
                 android.widget.Toast.LENGTH_SHORT,
             ).show()
         } catch (e: Exception) {
-            android.widget.Toast.makeText(this, "Import failed: ${e.message}", android.widget.Toast.LENGTH_SHORT).show()
+            android.widget.Toast.makeText(this, ErrorMessages.importFailed(), android.widget.Toast.LENGTH_SHORT).show()
         }
     }
 
@@ -349,7 +350,7 @@ fun HushScreen(
                         DictationService.DictationState.STREAMING -> "Speak now — text appears live"
                         DictationService.DictationState.PROCESSING -> "Decoding your yapping..."
                         DictationService.DictationState.DONE -> "Text copied to clipboard"
-                        DictationService.DictationState.ERROR -> state.errorMessage.ifBlank { "Something went wrong" }
+                        DictationService.DictationState.ERROR -> state.errorMessage.ifBlank { ErrorMessages.unexpectedError() }
                     },
                     fontSize = 15.sp,
                     fontFamily = PlayfairDisplay,
