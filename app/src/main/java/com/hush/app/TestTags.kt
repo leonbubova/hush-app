@@ -20,11 +20,12 @@ object TestTags {
     const val DRAWER_HOME = "drawer_home"
     const val DRAWER_USAGE = "drawer_usage"
     const val DRAWER_SETTINGS = "drawer_settings"
+    const val DRAWER_EXPORT = "drawer_export"
+    const val DRAWER_IMPORT = "drawer_import"
 
     // Settings screen
     const val SETTINGS_SCREEN = "settings_screen"
     const val API_KEY_FIELD = "api_key_field"
-    const val SAVE_BUTTON = "save_button"
     const val MODEL_DOWNLOAD_BUTTON = "model_download_button"
     const val MODEL_DELETE_BUTTON = "model_delete_button"
 
