@@ -70,7 +70,7 @@ class StreamingOverlayManager(private val service: AccessibilityService) {
             orientation = LinearLayout.VERTICAL
             setPadding(dp(12f), dp(8f), dp(12f), dp(8f))
             background = GradientDrawable().apply {
-                setColor(Color.parseColor("#F21A1A2E"))
+                setColor(Color.parseColor("#F20D0D1A"))
                 setStroke(1, Color.parseColor("#4D6C63FF"))
                 cornerRadius = dp(16f).toFloat()
             }

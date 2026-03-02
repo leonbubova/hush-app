@@ -37,6 +37,10 @@ class DictationService : Service() {
         const val EXTRA_OVERLAY_TEXT = "com.hush.EXTRA_OVERLAY_TEXT"
         const val EXTRA_OVERLAY_MODEL = "com.hush.EXTRA_OVERLAY_MODEL"
         const val NOTIF_ID = 1
+        const val ACTION_STATUS_PILL = "com.hush.ACTION_STATUS_PILL"
+        const val EXTRA_PILL_TYPE = "com.hush.EXTRA_PILL_TYPE"
+        const val EXTRA_PILL_MESSAGE = "com.hush.EXTRA_PILL_MESSAGE"
+        const val EXTRA_WORD_COUNT = "com.hush.EXTRA_WORD_COUNT"
     }
 
     inner class LocalBinder : Binder() {
@@ -107,6 +111,8 @@ class DictationService : Service() {
             isRecording = true
             recordingStartMs = System.currentTimeMillis()
             updateState(DictationState.RECORDING)
+            val config = ProviderRepository.getConfig(this, ProviderRepository.getActiveProviderId(this))
+            sendStatusPill("START", "Hush \u00b7 ${config.displayLabel} \u00b7 ${versionLabel()}")
             autoStopJob = scope.launch {
                 delay(MAX_RECORDING_MS)
                 if (isRecording) {
@@ -115,6 +121,7 @@ class DictationService : Service() {
             }
         } else {
             updateState(DictationState.ERROR, "Microphone unavailable — check permissions")
+            sendStatusPill("ERROR", "Microphone unavailable")
         }
     }
 
@@ -127,6 +134,7 @@ class DictationService : Service() {
 
         val file = audioRecorder?.stop() ?: run {
             updateState(DictationState.ERROR, "Recorder failed to save audio")
+            sendStatusPill("ERROR", "Recorder failed to save audio")
             return
         }
 
@@ -143,13 +151,18 @@ class DictationService : Service() {
                                 val wordCount = result.text.trim().split("\\s+".toRegex()).size
                                 UsageRepository.recordSession(this@DictationService, recordingStartMs, durationSeconds, wordCount)
                                 HistoryRepository.addEntry(this@DictationService, result.text)
+                                copyToClipboard(result.text)
+                                sendBroadcast(Intent(HushAccessibilityService.ACTION_INJECT_TEXT).setPackage(packageName).apply {
+                                    putExtra(EXTRA_WORD_COUNT, wordCount)
+                                })
+                            } else {
+                                sendStatusPill("DONE", "Done \u00b7 no speech detected")
                             }
-                            copyToClipboard(result.text)
-                            sendBroadcast(Intent(HushAccessibilityService.ACTION_INJECT_TEXT).setPackage(packageName))
                             updateState(DictationState.DONE, result.text)
                         }
                         is TranscribeResult.Error -> {
                             updateState(DictationState.ERROR, result.message)
+                            sendStatusPill("ERROR", result.message)
                         }
                     }
                 }
@@ -157,6 +170,7 @@ class DictationService : Service() {
                 Log.e(TAG, "Error during transcription", e)
                 withContext(Dispatchers.Main) {
                     updateState(DictationState.ERROR, "Unexpected error: ${e.message}")
+                    sendStatusPill("ERROR", "Unexpected error: ${e.message}")
                 }
             } finally {
                 file.delete()
@@ -183,6 +197,7 @@ class DictationService : Service() {
         val modelPath = modelManager.getMoonshineModelPath(config.model)
         if (modelPath == null) {
             updateState(DictationState.ERROR, "Moonshine model not downloaded — go to Settings")
+            sendStatusPill("ERROR", "Model not downloaded")
             return
         }
 
@@ -196,6 +211,7 @@ class DictationService : Service() {
         } catch (e: Exception) {
             Log.e(TAG, "Failed to initialize Moonshine", e)
             updateState(DictationState.ERROR, "Failed to load model: ${e.message}")
+            sendStatusPill("ERROR", "Failed to load model")
             return
         }
 
@@ -248,6 +264,7 @@ class DictationService : Service() {
                     moonshineProvider = null
                 }
                 updateState(DictationState.ERROR, message)
+                sendStatusPill("ERROR", message)
             }
         }
 
@@ -256,6 +273,7 @@ class DictationService : Service() {
         recordingStartMs = System.currentTimeMillis()
         provider.start()
         updateState(DictationState.STREAMING)
+        sendStatusPill("START", "Hush \u00b7 ${config.displayLabel} \u00b7 ${versionLabel()}")
 
         autoStopJob = scope.launch {
             delay(MAX_RECORDING_MS)
@@ -325,6 +343,7 @@ class DictationService : Service() {
                     voxtralRealtimeProvider = null
                 }
                 updateState(DictationState.ERROR, message)
+                sendStatusPill("ERROR", message)
             }
         }
 
@@ -333,6 +352,7 @@ class DictationService : Service() {
         recordingStartMs = System.currentTimeMillis()
         provider.start()
         updateState(DictationState.STREAMING)
+        sendStatusPill("START", "Hush \u00b7 ${config.displayLabel} \u00b7 ${versionLabel()}")
 
         autoStopJob = scope.launch {
             delay(MAX_RECORDING_MS)
@@ -378,9 +398,14 @@ class DictationService : Service() {
         if (streamingToExternalApp) {
             sendBroadcast(Intent(ACTION_OVERLAY_DISMISS).setPackage(packageName))
             if (finalText.isNotBlank()) {
+                val wordCount = finalText.split("\\s+".toRegex()).size
                 mainHandler.postDelayed({
-                    sendBroadcast(Intent(HushAccessibilityService.ACTION_INJECT_TEXT).setPackage(packageName))
+                    sendBroadcast(Intent(HushAccessibilityService.ACTION_INJECT_TEXT).setPackage(packageName).apply {
+                        putExtra(EXTRA_WORD_COUNT, wordCount)
+                    })
                 }, 150)
+            } else {
+                sendStatusPill("DONE", "Done \u00b7 no speech detected")
             }
         }
 
@@ -388,6 +413,19 @@ class DictationService : Service() {
     }
 
     // --- Common ---
+
+    private fun sendStatusPill(type: String, message: String) {
+        if (isAppInForeground) return
+        sendBroadcast(Intent(ACTION_STATUS_PILL).setPackage(packageName).apply {
+            putExtra(EXTRA_PILL_TYPE, type)
+            putExtra(EXTRA_PILL_MESSAGE, message)
+        })
+    }
+
+    private fun versionLabel(): String {
+        val v = BuildConfig.VERSION_NAME
+        return if (BuildConfig.DEBUG) "${v}-dev" else v
+    }
 
     private fun copyToClipboard(text: String) {
         val clipboard = getSystemService(CLIPBOARD_SERVICE) as ClipboardManager
