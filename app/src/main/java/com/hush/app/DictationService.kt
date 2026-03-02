@@ -19,8 +19,10 @@ import com.hush.app.transcription.ModelManager
 import com.hush.app.transcription.MoonshineProvider
 import com.hush.app.transcription.ProviderConfig
 import com.hush.app.transcription.ProviderFactory
+import com.hush.app.transcription.PostProcessorConfig
 import com.hush.app.transcription.ProviderRepository
 import com.hush.app.transcription.ErrorMessages
+import com.hush.app.transcription.TextPostProcessor
 import com.hush.app.transcription.TranscribeResult
 import com.hush.app.transcription.VoxtralRealtimeProvider
 import kotlinx.coroutines.*
@@ -149,10 +151,11 @@ class DictationService : Service() {
                     when (result) {
                         is TranscribeResult.Success -> {
                             if (result.text.isNotBlank()) {
-                                val wordCount = result.text.trim().split("\\s+".toRegex()).size
+                                val finalText = postProcessIfEnabled(result.text)
+                                val wordCount = finalText.trim().split("\\s+".toRegex()).size
                                 UsageRepository.recordSession(this@DictationService, recordingStartMs, durationSeconds, wordCount)
-                                HistoryRepository.addEntry(this@DictationService, result.text)
-                                copyToClipboard(result.text)
+                                HistoryRepository.addEntry(this@DictationService, finalText)
+                                copyToClipboard(finalText)
                                 if (!isAppInForeground) {
                                     sendBroadcast(Intent(HushAccessibilityService.ACTION_INJECT_TEXT).setPackage(packageName).apply {
                                         putExtra(EXTRA_WORD_COUNT, wordCount)
@@ -389,30 +392,59 @@ class DictationService : Service() {
             accumulatedText.append(pendingText)
         }
 
-        val finalText = accumulatedText.toString().trim()
-        if (finalText.isNotBlank()) {
-            val durationSeconds = ((System.currentTimeMillis() - recordingStartMs) / 1000).toInt()
-            val wordCount = finalText.split("\\s+".toRegex()).size
-            UsageRepository.recordSession(this, recordingStartMs, durationSeconds, wordCount)
-            HistoryRepository.addEntry(this, finalText)
-            copyToClipboard(finalText)
-        }
+        val rawText = accumulatedText.toString().trim()
 
+        // Dismiss overlay immediately — don't wait for post-processing
         if (streamingToExternalApp) {
             sendBroadcast(Intent(ACTION_OVERLAY_DISMISS).setPackage(packageName))
-            if (finalText.isNotBlank()) {
-                val wordCount = finalText.split("\\s+".toRegex()).size
-                mainHandler.postDelayed({
-                    sendBroadcast(Intent(HushAccessibilityService.ACTION_INJECT_TEXT).setPackage(packageName).apply {
-                        putExtra(EXTRA_WORD_COUNT, wordCount)
-                    })
-                }, 150)
-            } else {
+        }
+
+        if (rawText.isBlank()) {
+            if (streamingToExternalApp) {
                 sendStatusPill("DONE", "Done \u00b7 no speech detected")
             }
+            updateState(DictationState.DONE, rawText)
+            return
+        }
+
+        val ppConfig = ProviderRepository.getPostProcessorConfig(this)
+        if (ppConfig.enabled && ppConfig.apiKey.isNotBlank()) {
+            updateState(DictationState.PROCESSING)
+            scope.launch {
+                val finalText = postProcessIfEnabled(rawText)
+                withContext(Dispatchers.Main) {
+                    finishStreaming(finalText)
+                }
+            }
+        } else {
+            finishStreaming(rawText)
+        }
+    }
+
+    private fun finishStreaming(finalText: String) {
+        val durationSeconds = ((System.currentTimeMillis() - recordingStartMs) / 1000).toInt()
+        val wordCount = finalText.split("\\s+".toRegex()).size
+        UsageRepository.recordSession(this, recordingStartMs, durationSeconds, wordCount)
+        HistoryRepository.addEntry(this, finalText)
+        copyToClipboard(finalText)
+
+        if (streamingToExternalApp) {
+            mainHandler.postDelayed({
+                sendBroadcast(Intent(HushAccessibilityService.ACTION_INJECT_TEXT).setPackage(packageName).apply {
+                    putExtra(EXTRA_WORD_COUNT, wordCount)
+                })
+            }, 150)
         }
 
         updateState(DictationState.DONE, finalText)
+    }
+
+    // --- Post-processing ---
+
+    private suspend fun postProcessIfEnabled(rawText: String): String {
+        val config = ProviderRepository.getPostProcessorConfig(this@DictationService)
+        if (!config.enabled || config.apiKey.isBlank()) return rawText
+        return TextPostProcessor(config).process(rawText)
     }
 
     // --- Common ---

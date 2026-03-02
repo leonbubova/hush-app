@@ -328,11 +328,24 @@ $ADB -s emulator-5554 pull /sdcard/Pictures/hush-tests/ screenshots/
 
 ## AI-Assisted Development
 
-This project is developed with [Claude Code](https://claude.ai/claude-code). The repo includes dev tooling for emulator-based UI verification:
-- Build and deploy debug APK to emulator
-- Screenshot all screens after each rebuild
-- UI automation via `uiautomator dump` + tap
-- Hot reload loop watching `app/src/` for changes
+This project is developed with [Claude Code](https://claude.ai/claude-code). The repo includes dev tooling for emulator-based UI verification.
+
+### Emulator helper (`scripts/emu.sh`)
+
+A shell script that wraps all ADB interactions into single commands — navigation, tapping by visible text, screenshots, log inspection. Eliminates raw ADB boilerplate and multi-step `uiautomator dump` → `grep bounds` → `tap` workflows.
+
+```bash
+scripts/emu.sh build              # build + install on emulator
+scripts/emu.sh launch             # start app
+scripts/emu.sh nav settings       # open drawer → tap Settings
+scripts/emu.sh tap "Button Text"  # find element by text → tap (auto-scrolls if off-screen)
+scripts/emu.sh screenshot name    # save to dev-screenshots/
+scripts/emu.sh dump               # show visible text elements
+scripts/emu.sh logcat             # recent app errors
+scripts/emu.sh help               # full command list
+```
+
+The script lives in `scripts/` (gitignored — contains device-specific paths). It is self-maintaining: when commands break due to UI changes, they should be fixed in-place. See `.claude/rules/emulator.md` for the full reference and maintenance rules.
 
 ## Security
 
