@@ -1,11 +1,9 @@
 package com.hush.app
 
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
@@ -32,6 +30,10 @@ import java.time.LocalDate
 import java.time.ZoneId
 import java.time.format.TextStyle
 import java.time.temporal.ChronoUnit
+import com.hush.app.ui.theme.HushCardBackground
+import com.hush.app.ui.theme.HushCardBorder
+import com.hush.app.ui.theme.HushCardShape
+import com.hush.app.ui.theme.HushLabelColor
 import java.util.Locale
 
 private val PlayfairDisplay = FontFamily(
@@ -39,14 +41,9 @@ private val PlayfairDisplay = FontFamily(
     Font(R.font.playfair_display_bold, weight = FontWeight.Bold),
 )
 
-private val CardShape = RoundedCornerShape(20.dp)
-private val CardBorder = BorderStroke(1.dp, Color.White.copy(alpha = 0.08f))
-private val CardContainerColor = Color.White.copy(alpha = 0.06f)
 private val AccentPink = Color(0xFFB85C8A)
 private val AccentLightPink = Color(0xFFD4789C)
-private val AccentPurple = Color(0xFF6C63FF)
 private val AccentLavender = Color(0xFF9B6BCD)
-private val LabelColor = Color.White.copy(alpha = 0.5f)
 
 @Composable
 fun UsageScreen(sessions: List<RecordingSession>) {
@@ -118,7 +115,7 @@ private fun StreakCard(sessions: List<RecordingSession>, today: LocalDate, zone:
                 Text(
                     "CURRENT\nSTREAK",
                     fontSize = 11.sp,
-                    color = LabelColor,
+                    color = HushLabelColor,
                     letterSpacing = 1.5.sp,
                     lineHeight = 15.sp,
                 )
@@ -135,7 +132,7 @@ private fun StreakCard(sessions: List<RecordingSession>, today: LocalDate, zone:
                     Text(
                         "days",
                         fontSize = 16.sp,
-                        color = LabelColor,
+                        color = HushLabelColor,
                         modifier = Modifier.padding(bottom = 6.dp),
                     )
                 }
@@ -179,7 +176,7 @@ private fun StreakCard(sessions: List<RecordingSession>, today: LocalDate, zone:
                             }
                         }
                         Spacer(Modifier.height(3.dp))
-                        Text(label, fontSize = 9.sp, color = LabelColor)
+                        Text(label, fontSize = 9.sp, color = HushLabelColor)
                     }
                 }
             }
@@ -235,8 +232,8 @@ private fun TranscriptionsCard(sessions: List<RecordingSession>, today: LocalDat
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,
         ) {
-            Text("Transcriptions", fontSize = 11.sp, color = LabelColor, letterSpacing = 1.sp)
-            Text("Last 6 months", fontSize = 10.sp, color = LabelColor)
+            Text("Transcriptions", fontSize = 11.sp, color = HushLabelColor, letterSpacing = 1.sp)
+            Text("Last 6 months", fontSize = 10.sp, color = HushLabelColor)
         }
         Spacer(Modifier.height(4.dp))
 
@@ -312,7 +309,7 @@ private fun TranscriptionsCard(sessions: List<RecordingSession>, today: LocalDat
             horizontalArrangement = Arrangement.SpaceBetween,
         ) {
             monthLabels.forEach { label ->
-                Text(label, fontSize = 9.sp, color = LabelColor, textAlign = TextAlign.Center)
+                Text(label, fontSize = 9.sp, color = HushLabelColor, textAlign = TextAlign.Center)
             }
         }
     }
@@ -353,12 +350,12 @@ private fun SmallStatCard(
 ) {
     Card(
         modifier = modifier,
-        shape = CardShape,
-        colors = CardDefaults.cardColors(containerColor = CardContainerColor),
-        border = CardBorder,
+        shape = HushCardShape,
+        colors = CardDefaults.cardColors(containerColor = HushCardBackground),
+        border = HushCardBorder,
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
-            Text(label, fontSize = 11.sp, color = LabelColor, letterSpacing = 1.sp)
+            Text(label, fontSize = 11.sp, color = HushLabelColor, letterSpacing = 1.sp)
             Spacer(Modifier.height(4.dp))
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -427,7 +424,7 @@ private fun ThisWeekCard(sessions: List<RecordingSession>, today: LocalDate, zon
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.Bottom,
         ) {
-            Text("This week", fontSize = 11.sp, color = LabelColor, letterSpacing = 1.sp)
+            Text("This week", fontSize = 11.sp, color = HushLabelColor, letterSpacing = 1.sp)
             Text(
                 "$totalThisWeek",
                 fontSize = 28.sp,
@@ -481,7 +478,7 @@ private fun ThisWeekCard(sessions: List<RecordingSession>, today: LocalDate, zon
             horizontalArrangement = Arrangement.SpaceBetween,
         ) {
             dayLabels.forEach { label ->
-                Text(label, fontSize = 9.sp, color = LabelColor, textAlign = TextAlign.Center,
+                Text(label, fontSize = 9.sp, color = HushLabelColor, textAlign = TextAlign.Center,
                     modifier = Modifier.weight(1f))
             }
         }
@@ -524,8 +521,8 @@ private fun ActivityHeatmapCard(sessions: List<RecordingSession>, today: LocalDa
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,
         ) {
-            Text("Activity", fontSize = 11.sp, color = LabelColor, letterSpacing = 1.sp)
-            Text("$weeksBack weeks", fontSize = 10.sp, color = LabelColor)
+            Text("Activity", fontSize = 11.sp, color = HushLabelColor, letterSpacing = 1.sp)
+            Text("$weeksBack weeks", fontSize = 10.sp, color = HushLabelColor)
         }
         Spacer(Modifier.height(12.dp))
 
@@ -552,7 +549,7 @@ private fun ActivityHeatmapCard(sessions: List<RecordingSession>, today: LocalDa
                             Text(
                                 label,
                                 fontSize = 9.sp,
-                                color = LabelColor,
+                                color = HushLabelColor,
                             )
                         }
                     }
@@ -594,7 +591,7 @@ private fun ActivityHeatmapCard(sessions: List<RecordingSession>, today: LocalDa
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.End,
         ) {
-            Text("Less", fontSize = 9.sp, color = LabelColor)
+            Text("Less", fontSize = 9.sp, color = HushLabelColor)
             Spacer(Modifier.width(4.dp))
             heatColors.forEach { c ->
                 Spacer(Modifier.width(2.dp))
@@ -603,7 +600,7 @@ private fun ActivityHeatmapCard(sessions: List<RecordingSession>, today: LocalDa
                 }
             }
             Spacer(Modifier.width(4.dp))
-            Text("More", fontSize = 9.sp, color = LabelColor)
+            Text("More", fontSize = 9.sp, color = HushLabelColor)
         }
     }
 }
@@ -625,12 +622,12 @@ private fun CostCard(sessions: List<RecordingSession>, today: LocalDate, zone: Z
     val monthCost = thisMonthMinutes * costPerMinute
 
     UsageCard {
-        Text("ESTIMATED COST", fontSize = 11.sp, color = LabelColor, letterSpacing = 1.5.sp)
+        Text("ESTIMATED COST", fontSize = 11.sp, color = HushLabelColor, letterSpacing = 1.5.sp)
         Spacer(Modifier.height(4.dp))
         Text(
             "Based on Voxtral Mini at €0.003/min",
             fontSize = 10.sp,
-            color = LabelColor,
+            color = HushLabelColor,
         )
         Spacer(Modifier.height(12.dp))
 
@@ -639,7 +636,7 @@ private fun CostCard(sessions: List<RecordingSession>, today: LocalDate, zone: Z
             horizontalArrangement = Arrangement.SpaceBetween,
         ) {
             Column {
-                Text("All time", fontSize = 10.sp, color = LabelColor)
+                Text("All time", fontSize = 10.sp, color = HushLabelColor)
                 Text(
                     formatCost(totalCost),
                     fontSize = 28.sp,
@@ -649,7 +646,7 @@ private fun CostCard(sessions: List<RecordingSession>, today: LocalDate, zone: Z
                 )
             }
             Column(horizontalAlignment = Alignment.End) {
-                Text("This month", fontSize = 10.sp, color = LabelColor)
+                Text("This month", fontSize = 10.sp, color = HushLabelColor)
                 Text(
                     formatCost(monthCost),
                     fontSize = 28.sp,
@@ -667,9 +664,9 @@ private fun CostCard(sessions: List<RecordingSession>, today: LocalDate, zone: Z
 @Composable
 private fun UsageCard(content: @Composable ColumnScope.() -> Unit) {
     Card(
-        shape = CardShape,
-        colors = CardDefaults.cardColors(containerColor = CardContainerColor),
-        border = CardBorder,
+        shape = HushCardShape,
+        colors = CardDefaults.cardColors(containerColor = HushCardBackground),
+        border = HushCardBorder,
     ) {
         Column(modifier = Modifier.padding(20.dp), content = content)
     }

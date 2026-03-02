@@ -69,17 +69,6 @@ class SettingsScreenTest {
     }
 
     @Test
-    fun saveButtonIsPresent() {
-        setSettings(
-            MainViewModel.UiState(
-                activeProviderId = ProviderConfig.PROVIDER_VOXTRAL,
-                providerConfigs = defaultConfigs(),
-            )
-        )
-        composeRule.onNodeWithTag(TestTags.SAVE_BUTTON).assertIsDisplayed()
-    }
-
-    @Test
     fun localProviderShowsModelDownloadButton() {
         setSettings(
             MainViewModel.UiState(

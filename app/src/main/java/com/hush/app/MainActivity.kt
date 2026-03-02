@@ -49,6 +49,7 @@ import androidx.core.content.ContextCompat
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.hush.app.ui.theme.HushLabelColor
 import com.hush.app.ui.theme.HushTheme
 import kotlinx.coroutines.launch
 import kotlin.math.cos
@@ -136,6 +137,16 @@ class MainActivity : ComponentActivity() {
                                 startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS))
                                 scope.launch { drawerState.close() }
                             },
+                            onExport = {
+                                pendingExportJson = viewModel.getExportJson()
+                                val dateStr = java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.US).format(java.util.Date())
+                                createDocumentLauncher.launch("hush-backup-$dateStr.json")
+                                scope.launch { drawerState.close() }
+                            },
+                            onImport = {
+                                openDocumentLauncher.launch(arrayOf("application/json"))
+                                scope.launch { drawerState.close() }
+                            },
                         )
                     },
                 ) {
@@ -167,14 +178,6 @@ class MainActivity : ComponentActivity() {
                             onDeleteModel = { viewModel.deleteModel(it) },
                             onOpenDrawer = { scope.launch { drawerState.open() } },
                             onBack = { viewModel.navigateTo(MainViewModel.AppScreen.HOME) },
-                            onExport = {
-                                pendingExportJson = viewModel.getExportJson()
-                                val dateStr = java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.US).format(java.util.Date())
-                                createDocumentLauncher.launch("hush-backup-$dateStr.json")
-                            },
-                            onImport = {
-                                openDocumentLauncher.launch(arrayOf("application/json"))
-                            },
                         )
                     }
                 }
@@ -750,6 +753,8 @@ fun HushDrawerContent(
     currentScreen: MainViewModel.AppScreen,
     onNavigate: (MainViewModel.AppScreen) -> Unit,
     onAccessibilitySettings: () -> Unit = {},
+    onExport: () -> Unit = {},
+    onImport: () -> Unit = {},
 ) {
     ModalDrawerSheet(
         modifier = Modifier.width(220.dp),
@@ -794,6 +799,23 @@ fun HushDrawerContent(
             onClick = { onNavigate(MainViewModel.AppScreen.SETTINGS) },
             testTag = TestTags.DRAWER_SETTINGS,
         )
+        Spacer(Modifier.height(16.dp))
+        HorizontalDivider(color = Color.White.copy(alpha = 0.08f))
+        Spacer(Modifier.height(8.dp))
+        DrawerItem(
+            label = "Export Data",
+            selected = false,
+            onClick = onExport,
+            testTag = TestTags.DRAWER_EXPORT,
+            showExternalIndicator = true,
+        )
+        DrawerItem(
+            label = "Import Data",
+            selected = false,
+            onClick = onImport,
+            testTag = TestTags.DRAWER_IMPORT,
+            showExternalIndicator = true,
+        )
         Spacer(Modifier.weight(1f))
         DrawerItem(
             label = "Accessibility Settings",
@@ -816,6 +838,7 @@ private fun DrawerItem(
     selected: Boolean,
     onClick: () -> Unit,
     testTag: String = "",
+    showExternalIndicator: Boolean = false,
 ) {
     val bgColor = if (selected) Color.White.copy(alpha = 0.08f) else Color.Transparent
     Box(
@@ -828,12 +851,25 @@ private fun DrawerItem(
             .then(if (testTag.isNotEmpty()) Modifier.testTag(testTag) else Modifier)
             .padding(horizontal = 16.dp, vertical = 14.dp),
     ) {
-        Text(
-            label,
-            fontSize = 16.sp,
-            fontFamily = PlayfairDisplay,
-            fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal,
-            color = if (selected) Color.White else Color.White.copy(alpha = 0.6f),
-        )
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text(
+                label,
+                fontSize = 16.sp,
+                fontFamily = PlayfairDisplay,
+                fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal,
+                color = if (selected) Color.White else Color.White.copy(alpha = 0.6f),
+            )
+            if (showExternalIndicator) {
+                Text(
+                    "\u2197",
+                    fontSize = 14.sp,
+                    color = HushLabelColor,
+                )
+            }
+        }
     }
 }

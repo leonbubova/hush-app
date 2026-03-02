@@ -1,5 +1,6 @@
 package com.hush.app
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -21,10 +22,15 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import kotlinx.coroutines.delay
 import com.hush.app.transcription.ModelManager
 import com.hush.app.transcription.ModelStatus
 import com.hush.app.transcription.ProviderConfig
 import com.hush.app.transcription.ProviderFactory
+import com.hush.app.ui.theme.HushCardBackground
+import com.hush.app.ui.theme.HushCardBorder
+import com.hush.app.ui.theme.HushCardShape
+import com.hush.app.ui.theme.HushLabelColor
 
 private val PlayfairDisplay = FontFamily(
     Font(R.font.playfair_display_regular, weight = FontWeight.Normal),
@@ -41,8 +47,6 @@ fun SettingsScreen(
     onDeleteModel: (String) -> Unit = {},
     onOpenDrawer: () -> Unit,
     onBack: () -> Unit,
-    onExport: () -> Unit = {},
-    onImport: () -> Unit = {},
 ) {
     Scaffold(
         containerColor = Color(0xFF0D0D1A),
@@ -82,7 +86,7 @@ fun SettingsScreen(
                 "Transcription Provider",
                 fontSize = 14.sp,
                 fontWeight = FontWeight.SemiBold,
-                color = Color.White.copy(alpha = 0.6f),
+                color = HushLabelColor,
                 modifier = Modifier.padding(bottom = 12.dp),
             )
 
@@ -109,58 +113,19 @@ fun SettingsScreen(
                 )
             }
 
-            Spacer(Modifier.height(24.dp))
-
-            // Data section
-            Text(
-                "Data",
-                fontSize = 14.sp,
-                fontWeight = FontWeight.SemiBold,
-                color = Color.White.copy(alpha = 0.6f),
-                modifier = Modifier.padding(bottom = 12.dp),
-            )
-
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(16.dp),
-                colors = CardDefaults.cardColors(containerColor = Color.White.copy(alpha = 0.06f)),
-            ) {
-                Column(modifier = Modifier.padding(16.dp)) {
-                    Text(
-                        "Export or import your transcription history and usage data.",
-                        fontSize = 13.sp,
-                        color = Color.White.copy(alpha = 0.5f),
-                        modifier = Modifier.padding(bottom = 12.dp),
-                    )
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(12.dp),
-                    ) {
-                        Button(
-                            onClick = onExport,
-                            modifier = Modifier.weight(1f),
-                            shape = RoundedCornerShape(12.dp),
-                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF6C63FF)),
-                        ) {
-                            Text("Export Data", fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
-                        }
-                        OutlinedButton(
-                            onClick = onImport,
-                            modifier = Modifier.weight(1f),
-                            shape = RoundedCornerShape(12.dp),
-                            border = androidx.compose.foundation.BorderStroke(
-                                1.dp, Color(0xFF6C63FF).copy(alpha = 0.5f)
-                            ),
-                        ) {
-                            Text("Import Data", fontSize = 14.sp, color = Color(0xFF6C63FF))
-                        }
-                    }
-                }
-            }
-
             Spacer(Modifier.height(32.dp))
         }
     }
+}
+
+private fun providerDescription(providerId: String): String = when (providerId) {
+    ProviderConfig.PROVIDER_VOXTRAL -> "Cloud \u00B7 Mistral AI"
+    ProviderConfig.PROVIDER_VOXTRAL_REALTIME -> "Cloud \u00B7 Live Streaming"
+    ProviderConfig.PROVIDER_OPENAI -> "Cloud \u00B7 OpenAI Whisper"
+    ProviderConfig.PROVIDER_GROQ -> "Cloud \u00B7 Fast"
+    ProviderConfig.PROVIDER_MOONSHINE -> "On-Device \u00B7 Live Streaming"
+    ProviderConfig.PROVIDER_LOCAL -> "On-Device \u00B7 Deprecated"
+    else -> ""
 }
 
 @Composable
@@ -172,8 +137,7 @@ private fun ProviderSelector(
     Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
         providers.forEach { id ->
             val isSelected = id == activeId
-            val bgColor = if (isSelected) Color(0xFF6C63FF).copy(alpha = 0.25f) else Color.White.copy(alpha = 0.06f)
-            val borderColor = if (isSelected) Color(0xFF6C63FF) else Color.Transparent
+            val bgColor = if (isSelected) Color.White.copy(alpha = 0.10f) else Color.White.copy(alpha = 0.06f)
 
             Box(
                 modifier = Modifier
@@ -194,12 +158,19 @@ private fun ProviderSelector(
                         ),
                     )
                     Spacer(Modifier.width(8.dp))
-                    Text(
-                        ProviderFactory.displayName(id),
-                        fontSize = 16.sp,
-                        color = if (isSelected) Color.White else Color.White.copy(alpha = 0.7f),
-                        fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal,
-                    )
+                    Column {
+                        Text(
+                            ProviderFactory.displayName(id),
+                            fontSize = 16.sp,
+                            color = if (isSelected) Color.White else Color.White.copy(alpha = 0.7f),
+                            fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal,
+                        )
+                        Text(
+                            providerDescription(id),
+                            fontSize = 12.sp,
+                            color = HushLabelColor,
+                        )
+                    }
                 }
             }
         }
@@ -248,6 +219,13 @@ private fun VoxtralConfigPanel(
     var apiKey by remember(config) { mutableStateOf(config.apiKey) }
     var model by remember(config) { mutableStateOf(config.model) }
 
+    LaunchedEffect(apiKey) {
+        delay(500)
+        if (apiKey != config.apiKey && apiKey.isNotBlank()) {
+            onSave(config.copy(apiKey = apiKey.trim(), model = model))
+        }
+    }
+
     ConfigSection(title = "Voxtral Configuration") {
         ApiKeyField(
             value = apiKey,
@@ -260,14 +238,7 @@ private fun VoxtralConfigPanel(
         ModelDropdown(
             selected = model,
             options = listOf("voxtral-mini-latest", "voxtral-mini-2602", "voxtral-mini-2507"),
-            onSelect = { model = it },
-        )
-
-        Spacer(Modifier.height(16.dp))
-
-        SaveButton(
-            enabled = apiKey != config.apiKey || model != config.model,
-            onClick = { onSave(config.copy(apiKey = apiKey.trim(), model = model)) },
+            onSelect = { model = it; onSave(config.copy(apiKey = apiKey.trim(), model = it)) },
         )
     }
 }
@@ -280,11 +251,18 @@ private fun VoxtralRealtimeConfigPanel(
     var apiKey by remember(config) { mutableStateOf(config.apiKey) }
     var model by remember(config) { mutableStateOf(config.model) }
 
+    LaunchedEffect(apiKey) {
+        delay(500)
+        if (apiKey != config.apiKey && apiKey.isNotBlank()) {
+            onSave(config.copy(apiKey = apiKey.trim(), model = model))
+        }
+    }
+
     ConfigSection(title = "Voxtral Realtime Configuration") {
         Text(
             "Cloud streaming via WebSocket. Requires Mistral API key.",
             fontSize = 13.sp,
-            color = Color(0xFF6C63FF).copy(alpha = 0.8f),
+            color = HushLabelColor,
             modifier = Modifier.padding(bottom = 12.dp),
         )
 
@@ -299,14 +277,7 @@ private fun VoxtralRealtimeConfigPanel(
         ModelDropdown(
             selected = model,
             options = listOf("voxtral-mini-transcribe-realtime-2602", "voxtral-mini-transcribe-realtime-latest"),
-            onSelect = { model = it },
-        )
-
-        Spacer(Modifier.height(16.dp))
-
-        SaveButton(
-            enabled = apiKey != config.apiKey || model != config.model,
-            onClick = { onSave(config.copy(apiKey = apiKey.trim(), model = model)) },
+            onSelect = { model = it; onSave(config.copy(apiKey = apiKey.trim(), model = it)) },
         )
     }
 }
@@ -320,6 +291,20 @@ private fun OpenAiConfigPanel(
     var model by remember(config) { mutableStateOf(config.model) }
     var language by remember(config) { mutableStateOf(config.language) }
 
+    LaunchedEffect(apiKey) {
+        delay(500)
+        if (apiKey != config.apiKey && apiKey.isNotBlank()) {
+            onSave(config.copy(apiKey = apiKey.trim(), model = model, language = language.trim()))
+        }
+    }
+
+    LaunchedEffect(language) {
+        delay(500)
+        if (language != config.language) {
+            onSave(config.copy(apiKey = apiKey.trim(), model = model, language = language.trim()))
+        }
+    }
+
     ConfigSection(title = "OpenAI Configuration") {
         ApiKeyField(
             value = apiKey,
@@ -332,7 +317,7 @@ private fun OpenAiConfigPanel(
         ModelDropdown(
             selected = model,
             options = listOf("whisper-1", "gpt-4o-transcribe", "gpt-4o-mini-transcribe"),
-            onSelect = { model = it },
+            onSelect = { model = it; onSave(config.copy(apiKey = apiKey.trim(), model = it, language = language.trim())) },
         )
 
         Spacer(Modifier.height(12.dp))
@@ -345,13 +330,6 @@ private fun OpenAiConfigPanel(
             modifier = Modifier.fillMaxWidth(),
             colors = settingsTextFieldColors(),
         )
-
-        Spacer(Modifier.height(16.dp))
-
-        SaveButton(
-            enabled = apiKey != config.apiKey || model != config.model || language != config.language,
-            onClick = { onSave(config.copy(apiKey = apiKey.trim(), model = model, language = language.trim())) },
-        )
     }
 }
 
@@ -362,6 +340,13 @@ private fun GroqConfigPanel(
 ) {
     var apiKey by remember(config) { mutableStateOf(config.apiKey) }
     var model by remember(config) { mutableStateOf(config.model) }
+
+    LaunchedEffect(apiKey) {
+        delay(500)
+        if (apiKey != config.apiKey && apiKey.isNotBlank()) {
+            onSave(config.copy(apiKey = apiKey.trim(), model = model))
+        }
+    }
 
     ConfigSection(title = "Groq Configuration") {
         ApiKeyField(
@@ -375,14 +360,7 @@ private fun GroqConfigPanel(
         ModelDropdown(
             selected = model,
             options = listOf("whisper-large-v3-turbo", "whisper-large-v3"),
-            onSelect = { model = it },
-        )
-
-        Spacer(Modifier.height(16.dp))
-
-        SaveButton(
-            enabled = apiKey != config.apiKey || model != config.model,
-            onClick = { onSave(config.copy(apiKey = apiKey.trim(), model = model)) },
+            onSelect = { model = it; onSave(config.copy(apiKey = apiKey.trim(), model = it)) },
         )
     }
 }
@@ -398,6 +376,13 @@ private fun LocalConfigPanel(
 ) {
     var model by remember(config) { mutableStateOf(config.model) }
     var language by remember(config) { mutableStateOf(config.language) }
+
+    LaunchedEffect(language) {
+        delay(500)
+        if (language != config.language) {
+            onSave(config.copy(model = model, language = language.trim()))
+        }
+    }
 
     val selectedModelInfo = ModelManager.getModelInfo(model)
     val modelStatus = modelStatuses[model] ?: ModelStatus.NOT_DOWNLOADED
@@ -415,7 +400,7 @@ private fun LocalConfigPanel(
         ModelDropdown(
             selected = model,
             options = ModelManager.AVAILABLE_MODELS.map { it.id },
-            onSelect = { model = it },
+            onSelect = { model = it; onSave(config.copy(model = it, language = language.trim())) },
         )
 
         Spacer(Modifier.height(12.dp))
@@ -451,21 +436,21 @@ private fun LocalConfigPanel(
                                 ModelStatus.READY -> Color(0xFF4CAF50)
                                 ModelStatus.ERROR -> Color(0xFFEF5350)
                                 ModelStatus.DOWNLOADING -> Color(0xFF6C63FF)
-                                else -> Color.White.copy(alpha = 0.5f)
+                                else -> HushLabelColor
                             },
                         )
                     }
 
                     when (modelStatus) {
                         ModelStatus.NOT_DOWNLOADED, ModelStatus.ERROR -> {
-                            Button(
+                            OutlinedButton(
                                 onClick = { onDownloadModel(model) },
-                                shape = RoundedCornerShape(8.dp),
-                                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF6C63FF)),
+                                shape = RoundedCornerShape(12.dp),
+                                border = BorderStroke(1.dp, Color.White.copy(alpha = 0.2f)),
                                 contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
                                 modifier = Modifier.testTag(TestTags.MODEL_DOWNLOAD_BUTTON),
                             ) {
-                                Text("Download", fontSize = 13.sp)
+                                Text("Download", fontSize = 13.sp, color = Color.White)
                             }
                         }
                         ModelStatus.DOWNLOADING -> {
@@ -482,7 +467,7 @@ private fun LocalConfigPanel(
                                 onClick = { onDeleteModel(model) },
                                 modifier = Modifier.testTag(TestTags.MODEL_DELETE_BUTTON),
                             ) {
-                                Text("Delete", color = Color(0xFFEF5350), fontSize = 13.sp)
+                                Text("Delete", color = HushLabelColor, fontSize = 13.sp)
                             }
                         }
                     }
@@ -513,13 +498,6 @@ private fun LocalConfigPanel(
             modifier = Modifier.fillMaxWidth(),
             colors = settingsTextFieldColors(),
         )
-
-        Spacer(Modifier.height(16.dp))
-
-        SaveButton(
-            enabled = model != config.model || language != config.language,
-            onClick = { onSave(config.copy(model = model, language = language.trim())) },
-        )
     }
 }
 
@@ -542,7 +520,7 @@ private fun MoonshineConfigPanel(
         Text(
             "No API key needed. Streams on device.",
             fontSize = 13.sp,
-            color = Color(0xFF6C63FF).copy(alpha = 0.8f),
+            color = HushLabelColor,
             modifier = Modifier.padding(bottom = 12.dp),
         )
 
@@ -550,7 +528,7 @@ private fun MoonshineConfigPanel(
         ModelDropdown(
             selected = model,
             options = ModelManager.AVAILABLE_MOONSHINE_MODELS.map { it.id },
-            onSelect = { model = it },
+            onSelect = { model = it; onSave(config.copy(model = it)) },
         )
 
         Spacer(Modifier.height(12.dp))
@@ -586,21 +564,21 @@ private fun MoonshineConfigPanel(
                                 ModelStatus.READY -> Color(0xFF4CAF50)
                                 ModelStatus.ERROR -> Color(0xFFEF5350)
                                 ModelStatus.DOWNLOADING -> Color(0xFF6C63FF)
-                                else -> Color.White.copy(alpha = 0.5f)
+                                else -> HushLabelColor
                             },
                         )
                     }
 
                     when (modelStatus) {
                         ModelStatus.NOT_DOWNLOADED, ModelStatus.ERROR -> {
-                            Button(
+                            OutlinedButton(
                                 onClick = { onDownloadModel(model) },
-                                shape = RoundedCornerShape(8.dp),
-                                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF6C63FF)),
+                                shape = RoundedCornerShape(12.dp),
+                                border = BorderStroke(1.dp, Color.White.copy(alpha = 0.2f)),
                                 contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
                                 modifier = Modifier.testTag(TestTags.MODEL_DOWNLOAD_BUTTON),
                             ) {
-                                Text("Download", fontSize = 13.sp)
+                                Text("Download", fontSize = 13.sp, color = Color.White)
                             }
                         }
                         ModelStatus.DOWNLOADING -> {
@@ -617,7 +595,7 @@ private fun MoonshineConfigPanel(
                                 onClick = { onDeleteModel(model) },
                                 modifier = Modifier.testTag(TestTags.MODEL_DELETE_BUTTON),
                             ) {
-                                Text("Delete", color = Color(0xFFEF5350), fontSize = 13.sp)
+                                Text("Delete", color = HushLabelColor, fontSize = 13.sp)
                             }
                         }
                     }
@@ -637,13 +615,6 @@ private fun MoonshineConfigPanel(
                 }
             }
         }
-
-        Spacer(Modifier.height(16.dp))
-
-        SaveButton(
-            enabled = model != config.model,
-            onClick = { onSave(config.copy(model = model)) },
-        )
     }
 }
 
@@ -663,8 +634,9 @@ private fun ConfigSection(
 ) {
     Card(
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White.copy(alpha = 0.06f)),
+        shape = HushCardShape,
+        colors = CardDefaults.cardColors(containerColor = HushCardBackground),
+        border = HushCardBorder,
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
             Text(
@@ -717,7 +689,7 @@ private fun ApiKeyField(
                 isEditing = true
                 editValue = ""
             }) {
-                Text("Change", color = Color(0xFF6C63FF), fontSize = 13.sp)
+                Text("Change", color = HushLabelColor, fontSize = 13.sp)
             }
         }
     } else {
@@ -766,7 +738,7 @@ private fun ModelDropdown(
         ExposedDropdownMenu(
             expanded = expanded,
             onDismissRequest = { expanded = false },
-            containerColor = Color(0xFF2A2A4A),
+            containerColor = Color(0xFF2A2A3E),
         ) {
             options.forEach { option ->
                 DropdownMenuItem(
@@ -782,33 +754,12 @@ private fun ModelDropdown(
 }
 
 @Composable
-private fun SaveButton(
-    enabled: Boolean,
-    onClick: () -> Unit,
-) {
-    Button(
-        onClick = onClick,
-        enabled = enabled,
-        modifier = Modifier
-            .fillMaxWidth()
-            .testTag(TestTags.SAVE_BUTTON),
-        shape = RoundedCornerShape(12.dp),
-        colors = ButtonDefaults.buttonColors(
-            containerColor = Color(0xFF6C63FF),
-            disabledContainerColor = Color(0xFF6C63FF).copy(alpha = 0.3f),
-        ),
-    ) {
-        Text("Save", fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
-    }
-}
-
-@Composable
 private fun settingsTextFieldColors() = OutlinedTextFieldDefaults.colors(
     focusedTextColor = Color.White,
     unfocusedTextColor = Color.White.copy(alpha = 0.8f),
     focusedBorderColor = Color(0xFF6C63FF),
-    unfocusedBorderColor = Color.White.copy(alpha = 0.2f),
+    unfocusedBorderColor = Color.White.copy(alpha = 0.12f),
     cursorColor = Color(0xFF6C63FF),
     focusedLabelColor = Color(0xFF6C63FF),
-    unfocusedLabelColor = Color.White.copy(alpha = 0.5f),
+    unfocusedLabelColor = HushLabelColor,
 )
