@@ -1,0 +1,42 @@
+#!/bin/bash
+# Gitleaks pre-push hook — blocks push if secrets are detected.
+# Safety net: even if the workflow scan was skipped, this catches it.
+
+if ! command -v gitleaks &> /dev/null; then
+    echo "WARNING: gitleaks not installed. Install with: brew install gitleaks"
+    echo "Push continuing without secret scan."
+    exit 0
+fi
+
+remote="$1"
+z40=0000000000000000000000000000000000000000
+
+while read local_ref local_sha remote_ref remote_sha; do
+    if [ "$local_sha" = "$z40" ]; then
+        # Deleting branch, nothing to scan
+        continue
+    fi
+
+    if [ "$remote_sha" = "$z40" ]; then
+        # New branch — scan all commits not on main
+        range="main..$local_sha"
+    else
+        # Existing branch — scan only new commits
+        range="$remote_sha..$local_sha"
+    fi
+
+    echo "Scanning for secrets: $range"
+    gitleaks git --log-opts="$range" .
+    status=$?
+
+    if [ $status -ne 0 ]; then
+        echo ""
+        echo "BLOCKED: gitleaks found secrets in commits. Fix before pushing."
+        echo "Run 'gitleaks git -v --log-opts=\"$range\" .' for details."
+        exit 1
+    fi
+
+    echo "Secret scan clean."
+done
+
+exit 0

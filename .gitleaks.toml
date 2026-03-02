@@ -1,0 +1,4 @@
+title = "Hush App Secret Scanner"
+
+[extend]
+useDefault = true
