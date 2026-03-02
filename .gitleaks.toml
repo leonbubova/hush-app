@@ -1,0 +1,31 @@
+title = "Hush App Secret Scanner"
+
+# Keep all 300+ default rules and add our own on top
+[extend]
+useDefault = true
+
+# Android keystore passwords in properties files
+[[rules]]
+id = "android-keystore-password"
+description = "Android keystore password"
+regex = '''(?i)(RELEASE_STORE_PASSWORD|RELEASE_KEY_PASSWORD)\s*=\s*(.+)'''
+secretGroup = 2
+keywords = ["release_store_password", "release_key_password"]
+
+# Hardcoded signing config passwords in Gradle
+[[rules]]
+id = "android-signing-config"
+description = "Android signing config with hardcoded password"
+regex = '''(?i)(storePassword|keyPassword)\s*=\s*["']([^"']+)["']'''
+secretGroup = 2
+keywords = ["storepassword", "keypassword"]
+
+# Paths that are safe to ignore
+[allowlist]
+description = "Safe paths and test fixtures"
+paths = [
+    '''\.gitleaks\.toml''',
+    '''app/src/test/''',
+    '''app/src/androidTest/''',
+    '''local\.properties\.example''',
+]
