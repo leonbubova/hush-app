@@ -8,8 +8,6 @@ import okhttp3.Request
 import okhttp3.RequestBody.Companion.asRequestBody
 import org.json.JSONObject
 import java.io.File
-import java.net.SocketTimeoutException
-import java.net.UnknownHostException
 import java.util.concurrent.TimeUnit
 
 class GroqProvider(
@@ -24,7 +22,7 @@ class GroqProvider(
     override suspend fun transcribe(audioFile: File): TranscribeResult {
         val apiKey = config.apiKey
         if (apiKey.isBlank()) {
-            return TranscribeResult.Error(null, "No API key configured")
+            return TranscribeResult.Error(null, ErrorMessages.noApiKey(displayName))
         }
 
         Log.i(TAG, "transcribe: file=${audioFile.absolutePath} size=${audioFile.length()} bytes")
@@ -50,27 +48,16 @@ class GroqProvider(
             val responseBody = response.body?.string()
             Log.i(TAG, "transcribe: response code=${response.code}")
             if (response.isSuccessful) {
-                val json = JSONObject(responseBody ?: return TranscribeResult.Error(null, "Empty response from server"))
+                val json = JSONObject(responseBody ?: return TranscribeResult.Error(null, ErrorMessages.emptyResponse(displayName)))
                 TranscribeResult.Success(json.getString("text"))
             } else {
-                val message = when (response.code) {
-                    401 -> "Invalid API key"
-                    429 -> parse429Error(responseBody)
-                    in 500..599 -> "Server error (${response.code})"
-                    else -> "API error ${response.code}"
-                }
+                val message = ErrorMessages.forHttpError(response.code, responseBody, displayName)
                 Log.e(TAG, "transcribe: $message: $responseBody")
                 TranscribeResult.Error(response.code, message)
             }
-        } catch (e: UnknownHostException) {
-            Log.e(TAG, "transcribe: no internet", e)
-            TranscribeResult.Error(null, "No internet connection")
-        } catch (e: SocketTimeoutException) {
-            Log.e(TAG, "transcribe: timeout", e)
-            TranscribeResult.Error(null, "Request timed out")
         } catch (e: Exception) {
             Log.e(TAG, "transcribe: exception", e)
-            TranscribeResult.Error(null, "Network error: ${e.message ?: "unknown"}")
+            TranscribeResult.Error(null, ErrorMessages.forNetworkException(e))
         }
     }
 

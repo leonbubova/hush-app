@@ -42,7 +42,7 @@ class VoxtralRealtimeProvider(private val config: ProviderConfig.VoxtralRealtime
     fun start() {
         currentLine.clear()
         if (config.apiKey.isBlank()) {
-            onError?.invoke("Mistral API key not configured — go to Settings")
+            onError?.invoke(ErrorMessages.noApiKey("Mistral"))
             return
         }
 
@@ -101,11 +101,10 @@ class VoxtralRealtimeProvider(private val config: ProviderConfig.VoxtralRealtime
 
             override fun onFailure(ws: WebSocket, t: Throwable, response: Response?) {
                 Log.e(TAG, "WebSocket failure", t)
-                val message = when {
-                    response?.code == 401 -> "Invalid API key — check your Mistral key in Settings"
-                    response?.code == 429 -> "Rate limited — try again later"
-                    t.message?.contains("Unable to resolve host") == true -> "No internet connection"
-                    else -> "Connection failed: ${t.message}"
+                val message = if (response != null && response.code in listOf(401, 429, 500, 502, 503)) {
+                    ErrorMessages.forHttpError(response.code, null, "Mistral")
+                } else {
+                    ErrorMessages.forNetworkException(t as? Exception ?: Exception(t))
                 }
                 mainHandler.post { onError?.invoke(message) }
             }
@@ -135,7 +134,7 @@ class VoxtralRealtimeProvider(private val config: ProviderConfig.VoxtralRealtime
 
         if (audioRecord?.state != AudioRecord.STATE_INITIALIZED) {
             Log.e(TAG, "AudioRecord failed to initialize")
-            mainHandler.post { onError?.invoke("Microphone unavailable") }
+            mainHandler.post { onError?.invoke(ErrorMessages.micUnavailable()) }
             audioRecord?.release()
             audioRecord = null
             return

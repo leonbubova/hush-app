@@ -69,7 +69,7 @@ class VoxtralApiTest {
         assertTrue(result is TranscribeResult.Error)
         val error = result as TranscribeResult.Error
         assertEquals(401, error.code)
-        assertEquals("Invalid API key", error.message)
+        assertTrue(error.message.contains("Invalid API key"))
     }
 
     @Test
@@ -111,7 +111,7 @@ class VoxtralApiTest {
         assertTrue(result is TranscribeResult.Error)
         val error = result as TranscribeResult.Error
         assertEquals(500, error.code)
-        assertTrue(error.message.contains("Server error"))
+        assertTrue(error.message.contains("server is down"))
     }
 
     @Test
@@ -125,7 +125,7 @@ class VoxtralApiTest {
         assertTrue(result is TranscribeResult.Error)
         val error = result as TranscribeResult.Error
         assertEquals(503, error.code)
-        assertTrue(error.message.contains("Server error"))
+        assertTrue(error.message.contains("server is down"))
     }
 
     @Test
@@ -175,7 +175,7 @@ class VoxtralApiTest {
         val result = p.transcribe(testFile)
 
         assertTrue(result is TranscribeResult.Error)
-        assertEquals("No API key configured", (result as TranscribeResult.Error).message)
+        assertTrue((result as TranscribeResult.Error).message.contains("API key not configured"))
     }
 
     @Test

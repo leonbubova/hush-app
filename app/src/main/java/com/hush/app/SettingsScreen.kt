@@ -22,6 +22,7 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.hush.app.transcription.ErrorMessages
 import kotlinx.coroutines.delay
 import com.hush.app.transcription.ModelManager
 import com.hush.app.transcription.ModelStatus
@@ -429,7 +430,7 @@ private fun LocalConfigPanel(
                                 ModelStatus.NOT_DOWNLOADED -> "Not downloaded (${formatSize(selectedModelInfo?.sizeBytes ?: 0)})"
                                 ModelStatus.DOWNLOADING -> "Downloading... ${(progress * 100).toInt()}%"
                                 ModelStatus.READY -> "Ready"
-                                ModelStatus.ERROR -> "Download failed"
+                                ModelStatus.ERROR -> ErrorMessages.downloadFailed()
                             },
                             fontSize = 12.sp,
                             color = when (modelStatus) {
@@ -557,7 +558,7 @@ private fun MoonshineConfigPanel(
                                 ModelStatus.NOT_DOWNLOADED -> "Not downloaded (${formatSize(selectedModelInfo?.totalSizeBytes ?: 0)})"
                                 ModelStatus.DOWNLOADING -> "Downloading... ${(progress * 100).toInt()}%"
                                 ModelStatus.READY -> "Ready"
-                                ModelStatus.ERROR -> "Download failed"
+                                ModelStatus.ERROR -> ErrorMessages.downloadFailed()
                             },
                             fontSize = 12.sp,
                             color = when (modelStatus) {

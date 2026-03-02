@@ -53,7 +53,7 @@ class OpenAiWhisperProviderTest {
         val result = p.transcribe(testFile)
 
         assertTrue(result is TranscribeResult.Error)
-        assertEquals("No API key configured", (result as TranscribeResult.Error).message)
+        assertTrue((result as TranscribeResult.Error).message.contains("API key not configured"))
         assertEquals(0, server.requestCount)
     }
 
@@ -80,7 +80,7 @@ class OpenAiWhisperProviderTest {
         assertTrue(result is TranscribeResult.Error)
         val error = result as TranscribeResult.Error
         assertEquals(401, error.code)
-        assertEquals("Invalid API key", error.message)
+        assertTrue(error.message.contains("Invalid API key"))
     }
 
     @Test

@@ -20,6 +20,7 @@ import com.hush.app.transcription.MoonshineProvider
 import com.hush.app.transcription.ProviderConfig
 import com.hush.app.transcription.ProviderFactory
 import com.hush.app.transcription.ProviderRepository
+import com.hush.app.transcription.ErrorMessages
 import com.hush.app.transcription.TranscribeResult
 import com.hush.app.transcription.VoxtralRealtimeProvider
 import kotlinx.coroutines.*
@@ -120,8 +121,8 @@ class DictationService : Service() {
                 }
             }
         } else {
-            updateState(DictationState.ERROR, "Microphone unavailable — check permissions")
-            sendStatusPill("ERROR", "Microphone unavailable")
+            updateState(DictationState.ERROR, ErrorMessages.micUnavailable())
+            sendStatusPill("ERROR", ErrorMessages.micUnavailable())
         }
     }
 
@@ -133,8 +134,8 @@ class DictationService : Service() {
         updateState(DictationState.PROCESSING)
 
         val file = audioRecorder?.stop() ?: run {
-            updateState(DictationState.ERROR, "Recorder failed to save audio")
-            sendStatusPill("ERROR", "Recorder failed to save audio")
+            updateState(DictationState.ERROR, ErrorMessages.recorderFailed())
+            sendStatusPill("ERROR", ErrorMessages.recorderFailed())
             return
         }
 
@@ -152,9 +153,11 @@ class DictationService : Service() {
                                 UsageRepository.recordSession(this@DictationService, recordingStartMs, durationSeconds, wordCount)
                                 HistoryRepository.addEntry(this@DictationService, result.text)
                                 copyToClipboard(result.text)
-                                sendBroadcast(Intent(HushAccessibilityService.ACTION_INJECT_TEXT).setPackage(packageName).apply {
-                                    putExtra(EXTRA_WORD_COUNT, wordCount)
-                                })
+                                if (!isAppInForeground) {
+                                    sendBroadcast(Intent(HushAccessibilityService.ACTION_INJECT_TEXT).setPackage(packageName).apply {
+                                        putExtra(EXTRA_WORD_COUNT, wordCount)
+                                    })
+                                }
                             } else {
                                 sendStatusPill("DONE", "Done \u00b7 no speech detected")
                             }
@@ -169,8 +172,8 @@ class DictationService : Service() {
             } catch (e: Exception) {
                 Log.e(TAG, "Error during transcription", e)
                 withContext(Dispatchers.Main) {
-                    updateState(DictationState.ERROR, "Unexpected error: ${e.message}")
-                    sendStatusPill("ERROR", "Unexpected error: ${e.message}")
+                    updateState(DictationState.ERROR, ErrorMessages.unexpectedError())
+                    sendStatusPill("ERROR", ErrorMessages.unexpectedError())
                 }
             } finally {
                 file.delete()
@@ -196,8 +199,8 @@ class DictationService : Service() {
 
         val modelPath = modelManager.getMoonshineModelPath(config.model)
         if (modelPath == null) {
-            updateState(DictationState.ERROR, "Moonshine model not downloaded — go to Settings")
-            sendStatusPill("ERROR", "Model not downloaded")
+            updateState(DictationState.ERROR, ErrorMessages.moonshineNotDownloaded())
+            sendStatusPill("ERROR", ErrorMessages.moonshineNotDownloaded())
             return
         }
 
@@ -210,8 +213,8 @@ class DictationService : Service() {
             provider.initialize(modelPath)
         } catch (e: Exception) {
             Log.e(TAG, "Failed to initialize Moonshine", e)
-            updateState(DictationState.ERROR, "Failed to load model: ${e.message}")
-            sendStatusPill("ERROR", "Failed to load model")
+            updateState(DictationState.ERROR, ErrorMessages.modelLoadFailed())
+            sendStatusPill("ERROR", ErrorMessages.modelLoadFailed())
             return
         }
 
@@ -461,7 +464,7 @@ class DictationService : Service() {
             DictationState.STREAMING -> Triple("Streaming...", "Speaking — tap to stop", R.drawable.ic_notif)
             DictationState.PROCESSING -> Triple("Processing...", "Transcribing your audio", R.drawable.ic_notif)
             DictationState.DONE -> Triple("Copied to clipboard!", text?.take(80) ?: "", R.drawable.ic_notif)
-            DictationState.ERROR -> Triple("Error", text ?: "Something went wrong", R.drawable.ic_notif)
+            DictationState.ERROR -> Triple("Error", text ?: ErrorMessages.unexpectedError(), R.drawable.ic_notif)
         }
 
         val actionLabel = when (state) {

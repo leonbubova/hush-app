@@ -55,9 +55,7 @@ class MoonshineProvider {
 
                     override fun onError(e: TranscriptEvent.Error) {
                         Log.e(TAG, "Transcriber error", e.cause)
-                        this@MoonshineProvider.onError?.invoke(
-                            e.cause?.message ?: "Unknown transcription error"
-                        )
+                        this@MoonshineProvider.onError?.invoke(ErrorMessages.unexpectedError())
                     }
                 })
             }
@@ -67,7 +65,7 @@ class MoonshineProvider {
 
     fun start() {
         val t = transcriber ?: run {
-            onError?.invoke("Transcriber not initialized")
+            onError?.invoke(ErrorMessages.modelLoadFailed())
             return
         }
 
@@ -88,7 +86,7 @@ class MoonshineProvider {
 
         if (audioRecord?.state != AudioRecord.STATE_INITIALIZED) {
             Log.e(TAG, "AudioRecord failed to initialize")
-            onError?.invoke("Microphone unavailable")
+            onError?.invoke(ErrorMessages.micUnavailable())
             audioRecord?.release()
             audioRecord = null
             return

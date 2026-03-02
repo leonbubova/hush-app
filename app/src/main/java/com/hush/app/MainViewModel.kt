@@ -13,6 +13,7 @@ import androidx.security.crypto.EncryptedSharedPreferences
 import androidx.security.crypto.MasterKey
 import com.hush.app.transcription.ModelManager
 import com.hush.app.transcription.ModelStatus
+import com.hush.app.transcription.ErrorMessages
 import com.hush.app.transcription.ProviderConfig
 import com.hush.app.transcription.ProviderFactory
 import com.hush.app.transcription.ProviderRepository
@@ -67,7 +68,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                     }
                     DictationService.DictationState.ERROR -> _state.value.copy(
                         dictationState = dictationState,
-                        errorMessage = text ?: "Something went wrong",
+                        errorMessage = text ?: ErrorMessages.unexpectedError(),
                         streamingText = "",
                     )
                     DictationService.DictationState.STREAMING -> _state.value.copy(

@@ -48,18 +48,18 @@ class LocalProvider(
             val modelPath = modelManager.getModelPath(config.model)
                 ?: return@withContext TranscribeResult.Error(
                     null,
-                    "Model not downloaded. Please download '${config.model}' in Settings."
+                    ErrorMessages.modelNotDownloaded(config.model)
                 )
 
             // 2. Convert audio to 16kHz mono float PCM
             val audioData = try {
                 AudioConverter.decodeToFloat16kMono(audioFile)
             } catch (e: AudioConversionException) {
-                return@withContext TranscribeResult.Error(null, "Audio conversion failed: ${e.message}")
+                return@withContext TranscribeResult.Error(null, ErrorMessages.audioConversionFailed())
             }
 
             if (audioData.isEmpty()) {
-                return@withContext TranscribeResult.Error(null, "Audio file is empty or could not be decoded")
+                return@withContext TranscribeResult.Error(null, ErrorMessages.emptyAudio())
             }
 
             // 3. Load model (cached)
@@ -104,7 +104,7 @@ class LocalProvider(
             Log.i(TAG, "Encoder completed in ${encoderElapsed}ms")
 
             if (encoderOutput.isEmpty()) {
-                return@withContext TranscribeResult.Error(null, "Encoder produced no output")
+                return@withContext TranscribeResult.Error(null, ErrorMessages.localTranscriptionFailed())
             }
 
             // 6. Autoregressive decoder loop
@@ -119,13 +119,13 @@ class LocalProvider(
             Log.i(TAG, "Total inference time: ${melElapsed + encoderElapsed + decoderElapsed}ms")
 
             if (outputText.isBlank()) {
-                return@withContext TranscribeResult.Error(null, "Transcription produced empty output")
+                return@withContext TranscribeResult.Error(null, ErrorMessages.emptyTranscription())
             }
 
             TranscribeResult.Success(outputText.trim())
         } catch (e: Exception) {
             Log.e(TAG, "Local transcription failed", e)
-            TranscribeResult.Error(null, "Local transcription failed: ${e.message}")
+            TranscribeResult.Error(null, ErrorMessages.localTranscriptionFailed())
         }
     }
 
