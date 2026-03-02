@@ -14,6 +14,7 @@ import androidx.security.crypto.MasterKey
 import com.hush.app.transcription.ModelManager
 import com.hush.app.transcription.ModelStatus
 import com.hush.app.transcription.ErrorMessages
+import com.hush.app.transcription.PostProcessorConfig
 import com.hush.app.transcription.ProviderConfig
 import com.hush.app.transcription.ProviderFactory
 import com.hush.app.transcription.ProviderRepository
@@ -38,6 +39,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         val usageSessions: List<RecordingSession> = emptyList(),
         val modelStatuses: Map<String, ModelStatus> = emptyMap(),
         val modelDownloadProgress: Map<String, Float> = emptyMap(),
+        val postProcessorConfig: PostProcessorConfig = PostProcessorConfig(),
     )
 
     private val _state = MutableStateFlow(UiState())
@@ -148,12 +150,14 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         // ProviderRepository handles migrating voxtral_api_key → provider config
         val activeId = ProviderRepository.getActiveProviderId(application)
         val configs = ProviderRepository.getAllConfigs(application)
+        val ppConfig = ProviderRepository.getPostProcessorConfig(application)
         _state.value = _state.value.copy(
             activeProviderId = activeId,
             providerConfigs = configs,
             history = HistoryRepository.loadAll(application),
             accessibilityEnabled = isAccessibilityEnabled(),
             usageSessions = UsageRepository.loadSessions(application),
+            postProcessorConfig = ppConfig,
         )
         // Observe model download statuses and progress
         viewModelScope.launch {
@@ -203,6 +207,12 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         val updated = _state.value.providerConfigs.toMutableMap()
         updated[providerId] = config
         _state.value = _state.value.copy(providerConfigs = updated)
+    }
+
+    fun savePostProcessorConfig(config: PostProcessorConfig) {
+        val context = getApplication<Application>()
+        ProviderRepository.savePostProcessorConfig(context, config)
+        _state.value = _state.value.copy(postProcessorConfig = config)
     }
 
     fun downloadModel(modelId: String) {

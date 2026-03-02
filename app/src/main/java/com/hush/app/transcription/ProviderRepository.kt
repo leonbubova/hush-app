@@ -15,6 +15,7 @@ object ProviderRepository {
     private const val KEY_ACTIVE_PROVIDER = "active_provider"
     private const val KEY_PROVIDER_CFG_PREFIX = "provider_cfg_"
     private const val LEGACY_API_KEY = "voxtral_api_key"
+    private const val KEY_POST_PROCESSOR_CFG = "post_processor_cfg"
 
     @Volatile private var cachedPrefs: SharedPreferences? = null
 
@@ -85,6 +86,23 @@ object ProviderRepository {
                 ProviderConfig.default(id)
             }
         }
+    }
+
+    fun getPostProcessorConfig(context: Context): PostProcessorConfig {
+        val prefs = getEncryptedPrefs(context)
+        val json = prefs.getString(KEY_POST_PROCESSOR_CFG, null) ?: return PostProcessorConfig()
+        return try {
+            PostProcessorConfig.fromJson(JSONObject(json))
+        } catch (e: Exception) {
+            Log.w(TAG, "Failed to parse post-processor config", e)
+            PostProcessorConfig()
+        }
+    }
+
+    fun savePostProcessorConfig(context: Context, config: PostProcessorConfig) {
+        getEncryptedPrefs(context).edit()
+            .putString(KEY_POST_PROCESSOR_CFG, config.toJson().toString())
+            .apply()
     }
 
     val allProviderIds = listOf(

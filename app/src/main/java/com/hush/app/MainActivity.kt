@@ -175,6 +175,7 @@ class MainActivity : ComponentActivity() {
                             state = state,
                             onSetActiveProvider = { viewModel.setActiveProvider(it) },
                             onSaveProviderConfig = { id, config -> viewModel.saveProviderConfig(id, config) },
+                            onSavePostProcessorConfig = { viewModel.savePostProcessorConfig(it) },
                             onDownloadModel = { viewModel.downloadModel(it) },
                             onDeleteModel = { viewModel.deleteModel(it) },
                             onOpenDrawer = { scope.launch { drawerState.open() } },

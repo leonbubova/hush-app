@@ -26,6 +26,7 @@ import com.hush.app.transcription.ErrorMessages
 import kotlinx.coroutines.delay
 import com.hush.app.transcription.ModelManager
 import com.hush.app.transcription.ModelStatus
+import com.hush.app.transcription.PostProcessorConfig
 import com.hush.app.transcription.ProviderConfig
 import com.hush.app.transcription.ProviderFactory
 import com.hush.app.ui.theme.HushCardBackground
@@ -44,6 +45,7 @@ fun SettingsScreen(
     state: MainViewModel.UiState,
     onSetActiveProvider: (String) -> Unit,
     onSaveProviderConfig: (String, ProviderConfig) -> Unit,
+    onSavePostProcessorConfig: (PostProcessorConfig) -> Unit = {},
     onDownloadModel: (String) -> Unit = {},
     onDeleteModel: (String) -> Unit = {},
     onOpenDrawer: () -> Unit,
@@ -113,6 +115,14 @@ fun SettingsScreen(
                     onDeleteModel = onDeleteModel,
                 )
             }
+
+            Spacer(Modifier.height(24.dp))
+
+            // Text Enhancement section
+            TextEnhancementPanel(
+                config = state.postProcessorConfig,
+                onSave = onSavePostProcessorConfig,
+            )
 
             Spacer(Modifier.height(32.dp))
         }
@@ -613,6 +623,191 @@ private fun MoonshineConfigPanel(
                         color = Color(0xFF6C63FF),
                         trackColor = Color.White.copy(alpha = 0.1f),
                     )
+                }
+            }
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun TextEnhancementPanel(
+    config: PostProcessorConfig,
+    onSave: (PostProcessorConfig) -> Unit,
+) {
+    var enabled by remember(config) { mutableStateOf(config.enabled) }
+    var apiType by remember(config) { mutableStateOf(config.apiType) }
+    var apiKey by remember(config) { mutableStateOf(config.apiKey) }
+    var baseUrl by remember(config) { mutableStateOf(config.baseUrl) }
+    var model by remember(config) { mutableStateOf(config.model) }
+    var systemPrompt by remember(config) { mutableStateOf(config.systemPrompt) }
+
+    fun currentConfig() = PostProcessorConfig(
+        enabled = enabled,
+        apiType = apiType,
+        apiKey = apiKey.trim(),
+        baseUrl = baseUrl.trim(),
+        model = model.trim(),
+        systemPrompt = systemPrompt,
+    )
+
+    // Auto-save with debounce for text fields
+    LaunchedEffect(apiKey, baseUrl, model, systemPrompt) {
+        delay(500)
+        val current = currentConfig()
+        if (current != config) {
+            onSave(current)
+        }
+    }
+
+    Text(
+        "Text Enhancement",
+        fontSize = 14.sp,
+        fontWeight = FontWeight.SemiBold,
+        color = HushLabelColor,
+        modifier = Modifier.padding(bottom = 12.dp),
+    )
+
+    ConfigSection(title = "LLM Post-Processing") {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    "Clean up transcriptions",
+                    fontSize = 14.sp,
+                    color = Color.White.copy(alpha = 0.9f),
+                )
+                Text(
+                    "Fix grammar, punctuation, and filler words",
+                    fontSize = 12.sp,
+                    color = HushLabelColor,
+                )
+            }
+            Switch(
+                checked = enabled,
+                onCheckedChange = {
+                    enabled = it
+                    onSave(currentConfig().copy(enabled = it))
+                },
+                colors = SwitchDefaults.colors(
+                    checkedThumbColor = Color.White,
+                    checkedTrackColor = Color(0xFF6C63FF),
+                    uncheckedThumbColor = Color.White.copy(alpha = 0.6f),
+                    uncheckedTrackColor = Color.White.copy(alpha = 0.1f),
+                ),
+            )
+        }
+
+        if (enabled) {
+            Spacer(Modifier.height(16.dp))
+
+            // API type dropdown
+            var apiTypeExpanded by remember { mutableStateOf(false) }
+            ExposedDropdownMenuBox(
+                expanded = apiTypeExpanded,
+                onExpandedChange = { apiTypeExpanded = it },
+            ) {
+                OutlinedTextField(
+                    value = when (apiType) {
+                        PostProcessorConfig.API_TYPE_ANTHROPIC -> "Anthropic"
+                        PostProcessorConfig.API_TYPE_OPENAI -> "OpenAI-compatible"
+                        else -> apiType
+                    },
+                    onValueChange = {},
+                    readOnly = true,
+                    label = { Text("API Type") },
+                    trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = apiTypeExpanded) },
+                    modifier = Modifier.fillMaxWidth().menuAnchor(),
+                    colors = settingsTextFieldColors(),
+                )
+                ExposedDropdownMenu(
+                    expanded = apiTypeExpanded,
+                    onDismissRequest = { apiTypeExpanded = false },
+                    containerColor = Color(0xFF2A2A3E),
+                ) {
+                    DropdownMenuItem(
+                        text = { Text("Anthropic", color = Color.White) },
+                        onClick = {
+                            apiType = PostProcessorConfig.API_TYPE_ANTHROPIC
+                            baseUrl = PostProcessorConfig.DEFAULT_ANTHROPIC_URL
+                            model = PostProcessorConfig.DEFAULT_ANTHROPIC_MODEL
+                            apiTypeExpanded = false
+                            onSave(currentConfig())
+                        },
+                    )
+                    DropdownMenuItem(
+                        text = { Text("OpenAI-compatible", color = Color.White) },
+                        onClick = {
+                            apiType = PostProcessorConfig.API_TYPE_OPENAI
+                            baseUrl = PostProcessorConfig.DEFAULT_OPENAI_URL
+                            model = PostProcessorConfig.DEFAULT_OPENAI_MODEL
+                            apiTypeExpanded = false
+                            onSave(currentConfig())
+                        },
+                    )
+                }
+            }
+
+            Spacer(Modifier.height(12.dp))
+
+            // API key
+            ApiKeyField(
+                value = apiKey,
+                onValueChange = { apiKey = it },
+                label = if (apiType == PostProcessorConfig.API_TYPE_ANTHROPIC)
+                    "Anthropic API Key" else "API Key",
+            )
+
+            Spacer(Modifier.height(12.dp))
+
+            // Base URL
+            OutlinedTextField(
+                value = baseUrl,
+                onValueChange = { baseUrl = it },
+                label = { Text("Base URL") },
+                singleLine = true,
+                modifier = Modifier.fillMaxWidth(),
+                colors = settingsTextFieldColors(),
+            )
+
+            Spacer(Modifier.height(12.dp))
+
+            // Model
+            OutlinedTextField(
+                value = model,
+                onValueChange = { model = it },
+                label = { Text("Model") },
+                singleLine = true,
+                modifier = Modifier.fillMaxWidth(),
+                colors = settingsTextFieldColors(),
+            )
+
+            Spacer(Modifier.height(12.dp))
+
+            // System prompt
+            OutlinedTextField(
+                value = systemPrompt,
+                onValueChange = { systemPrompt = it },
+                label = { Text("System Prompt") },
+                minLines = 3,
+                maxLines = 8,
+                modifier = Modifier.fillMaxWidth(),
+                colors = settingsTextFieldColors(),
+            )
+
+            // Reset to default button
+            if (systemPrompt != PostProcessorConfig.DEFAULT_SYSTEM_PROMPT) {
+                Spacer(Modifier.height(8.dp))
+                TextButton(
+                    onClick = {
+                        systemPrompt = PostProcessorConfig.DEFAULT_SYSTEM_PROMPT
+                        onSave(currentConfig().copy(systemPrompt = PostProcessorConfig.DEFAULT_SYSTEM_PROMPT))
+                    },
+                ) {
+                    Text("Reset prompt to default", color = HushLabelColor, fontSize = 13.sp)
                 }
             }
         }
