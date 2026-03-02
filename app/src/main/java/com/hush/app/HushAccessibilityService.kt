@@ -20,6 +20,7 @@ class HushAccessibilityService : AccessibilityService() {
 
     private var lastVolumeDownTime = 0L
     private lateinit var overlayManager: StreamingOverlayManager
+    private lateinit var statusPillOverlay: StatusPillOverlay
 
     private val overlayReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent?) {
@@ -38,19 +39,31 @@ class HushAccessibilityService : AccessibilityService() {
 
     private val injectReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent?) {
+            val wordCount = intent?.getIntExtra(DictationService.EXTRA_WORD_COUNT, 0) ?: 0
             val focused = rootInActiveWindow?.findFocus(AccessibilityNodeInfo.FOCUS_INPUT)
             if (focused == null) {
                 Log.i(TAG, "No focused text field — text remains on clipboard")
+                statusPillOverlay.show(StatusPillOverlay.PillType.DONE, "Copied \u00b7 no text field")
                 return
             }
             focused.performAction(AccessibilityNodeInfo.ACTION_PASTE)
             Log.i(TAG, "Pasted transcription")
+            statusPillOverlay.show(StatusPillOverlay.PillType.DONE, "Pasted \u00b7 $wordCount words")
+        }
+    }
+
+    private val pillReceiver = object : BroadcastReceiver() {
+        override fun onReceive(context: Context?, intent: Intent?) {
+            val type = intent?.getStringExtra(DictationService.EXTRA_PILL_TYPE) ?: return
+            val message = intent.getStringExtra(DictationService.EXTRA_PILL_MESSAGE) ?: return
+            statusPillOverlay.show(type, message)
         }
     }
 
     override fun onServiceConnected() {
         super.onServiceConnected()
         overlayManager = StreamingOverlayManager(this)
+        statusPillOverlay = StatusPillOverlay(this)
 
         val overlayFilter = IntentFilter().apply {
             addAction(DictationService.ACTION_OVERLAY_SHOW)
@@ -58,7 +71,8 @@ class HushAccessibilityService : AccessibilityService() {
         }
         registerReceiver(overlayReceiver, overlayFilter, Context.RECEIVER_NOT_EXPORTED)
         registerReceiver(injectReceiver, IntentFilter(ACTION_INJECT_TEXT), Context.RECEIVER_NOT_EXPORTED)
-        Log.i(TAG, "Registered overlay and inject broadcast receivers")
+        registerReceiver(pillReceiver, IntentFilter(DictationService.ACTION_STATUS_PILL), Context.RECEIVER_NOT_EXPORTED)
+        Log.i(TAG, "Registered overlay, inject, and pill broadcast receivers")
     }
 
     override fun onKeyEvent(event: KeyEvent): Boolean {
@@ -85,12 +99,15 @@ class HushAccessibilityService : AccessibilityService() {
     override fun onInterrupt() {
         Log.i(TAG, "Accessibility service interrupted")
         overlayManager.dismiss()
+        statusPillOverlay.dismiss()
     }
 
     override fun onDestroy() {
         overlayManager.dismiss()
+        statusPillOverlay.dismiss()
         unregisterReceiver(overlayReceiver)
         unregisterReceiver(injectReceiver)
+        unregisterReceiver(pillReceiver)
         super.onDestroy()
     }
 }
