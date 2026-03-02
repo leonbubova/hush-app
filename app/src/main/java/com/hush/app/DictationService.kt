@@ -6,11 +6,13 @@ import android.app.PendingIntent
 import android.app.Service
 import android.content.ClipData
 import android.content.ClipboardManager
+import android.content.ComponentName
 import android.content.Intent
 import android.os.Binder
 import android.os.Handler
 import android.os.IBinder
 import android.os.Looper
+import android.service.quicksettings.TileService
 import android.util.Log
 import androidx.core.app.NotificationCompat
 import com.hush.app.transcription.ModelManager
@@ -28,6 +30,8 @@ class DictationService : Service() {
         private const val TAG = "DictationService"
         private const val MAX_RECORDING_MS = 300_000L // 5 minutes
         const val ACTION_TOGGLE = "com.hush.TOGGLE"
+        var currentState: DictationState = DictationState.IDLE
+            private set
         const val ACTION_OVERLAY_SHOW = "com.hush.ACTION_OVERLAY_SHOW"
         const val ACTION_OVERLAY_DISMISS = "com.hush.ACTION_OVERLAY_DISMISS"
         const val EXTRA_OVERLAY_TEXT = "com.hush.EXTRA_OVERLAY_TEXT"
@@ -391,9 +395,11 @@ class DictationService : Service() {
     }
 
     private fun updateState(state: DictationState, text: String? = null) {
+        currentState = state
         val manager = getSystemService(NOTIFICATION_SERVICE) as android.app.NotificationManager
         manager.notify(NOTIF_ID, buildNotification(state, text))
         onStateChanged?.invoke(state, text)
+        TileService.requestListeningState(this, ComponentName(this, DictationTileService::class.java))
     }
 
     private fun buildNotification(state: DictationState, text: String? = null): Notification {
