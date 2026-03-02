@@ -138,7 +138,10 @@ class ModelManager(private val context: Context) {
         val allowedNames = AVAILABLE_MODELS.flatMap { listOf(it.fileName, "${it.fileName}.tmp") }.toSet()
 
         modelsDir.listFiles()?.forEach { file ->
-            if (file.isDirectory) return@forEach // skip moonshine subdirectory
+            if (file.isDirectory) {
+                if (file.name == MOONSHINE_DIR) cleanOrphanedMoonshineModels(file)
+                return@forEach
+            }
             if (file.name in allowedNames) return@forEach
             if (file.name.endsWith(".pte") || file.name.endsWith(".tmp")) {
                 val sizeMb = file.length() / (1024 * 1024)
@@ -146,6 +149,37 @@ class ModelManager(private val context: Context) {
                 file.delete()
             } else {
                 Log.i(TAG, "Skipping unexpected file in models dir: ${file.name}")
+            }
+        }
+    }
+
+    private fun cleanOrphanedMoonshineModels(moonshineDir: File) {
+        val knownIds = AVAILABLE_MOONSHINE_MODELS.associateBy { it.dirName }
+
+        moonshineDir.listFiles()?.forEach { dir ->
+            if (!dir.isDirectory) {
+                dir.delete()
+                return@forEach
+            }
+
+            val info = knownIds[dir.name]
+            if (info == null) {
+                Log.i(TAG, "Deleting orphaned moonshine model dir: ${dir.name}")
+                dir.deleteRecursively()
+                return@forEach
+            }
+
+            // Clean .tmp files from interrupted downloads
+            dir.listFiles()?.filter { it.name.endsWith(".tmp") }?.forEach { tmp ->
+                Log.i(TAG, "Deleting orphaned moonshine tmp: ${dir.name}/${tmp.name}")
+                tmp.delete()
+            }
+
+            // Delete entire dir if not all components are present
+            val allPresent = info.components.all { File(dir, it).exists() }
+            if (!allPresent) {
+                Log.i(TAG, "Deleting incomplete moonshine model: ${dir.name}")
+                dir.deleteRecursively()
             }
         }
     }
