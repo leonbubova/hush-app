@@ -49,15 +49,21 @@ class TextPostProcessor(
         }
     }
 
+    private fun buildSystemPrompt(): String {
+        val base = config.systemPrompt
+        // If user has customized the prompt beyond the default, their prompt is the full instruction
+        return base
+    }
+
     private fun callAnthropic(rawText: String): String {
-        val baseUrl = (endpointOverride ?: config.baseUrl).trimEnd('/')
+        val baseUrl = (endpointOverride ?: PostProcessorConfig.baseUrlForType(config.apiType)).trimEnd('/')
         val url = "$baseUrl/messages"
 
         val body = JSONObject().apply {
             put("model", config.model)
             put("max_tokens", 2048)
             put("temperature", 0.3)
-            put("system", config.systemPrompt)
+            put("system", buildSystemPrompt())
             put("messages", JSONArray().apply {
                 put(JSONObject().apply {
                     put("role", "user")
@@ -74,9 +80,11 @@ class TextPostProcessor(
             .header("content-type", "application/json")
             .build()
 
+        Log.i(TAG, "Anthropic request: $url model=${config.model}")
         val response = client.newCall(request).execute()
         if (!response.isSuccessful) {
-            Log.w(TAG, "Anthropic API error: ${response.code}")
+            val errorBody = response.body?.string()?.take(200) ?: ""
+            Log.w(TAG, "Anthropic API error: ${response.code} url=$url body=$errorBody")
             return rawText
         }
 
@@ -86,11 +94,15 @@ class TextPostProcessor(
         if (content.length() == 0) return rawText
 
         val text = content.getJSONObject(0).getString("text")
-        return if (text.isNotBlank()) text.trim() else rawText
+        if (text.isNotBlank()) {
+            Log.i(TAG, "Anthropic success: '${rawText.take(50)}' → '${text.trim().take(50)}'")
+            return text.trim()
+        }
+        return rawText
     }
 
     private fun callOpenAi(rawText: String): String {
-        val baseUrl = (endpointOverride ?: config.baseUrl).trimEnd('/')
+        val baseUrl = (endpointOverride ?: PostProcessorConfig.baseUrlForType(config.apiType)).trimEnd('/')
         val url = "$baseUrl/chat/completions"
 
         val body = JSONObject().apply {
@@ -100,7 +112,7 @@ class TextPostProcessor(
             put("messages", JSONArray().apply {
                 put(JSONObject().apply {
                     put("role", "system")
-                    put("content", config.systemPrompt)
+                    put("content", buildSystemPrompt())
                 })
                 put(JSONObject().apply {
                     put("role", "user")
@@ -116,9 +128,11 @@ class TextPostProcessor(
             .header("content-type", "application/json")
             .build()
 
+        Log.i(TAG, "OpenAI request: $url model=${config.model}")
         val response = client.newCall(request).execute()
         if (!response.isSuccessful) {
-            Log.w(TAG, "OpenAI-compatible API error: ${response.code}")
+            val errorBody = response.body?.string()?.take(200) ?: ""
+            Log.w(TAG, "OpenAI-compatible API error: ${response.code} url=$url body=$errorBody")
             return rawText
         }
 
@@ -128,6 +142,10 @@ class TextPostProcessor(
         if (choices.length() == 0) return rawText
 
         val text = choices.getJSONObject(0).getJSONObject("message").getString("content")
-        return if (text.isNotBlank()) text.trim() else rawText
+        if (text.isNotBlank()) {
+            Log.i(TAG, "OpenAI success: '${rawText.take(50)}' → '${text.trim().take(50)}'")
+            return text.trim()
+        }
+        return rawText
     }
 }

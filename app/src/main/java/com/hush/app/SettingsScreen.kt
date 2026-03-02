@@ -638,7 +638,6 @@ private fun TextEnhancementPanel(
     var enabled by remember(config) { mutableStateOf(config.enabled) }
     var apiType by remember(config) { mutableStateOf(config.apiType) }
     var apiKey by remember(config) { mutableStateOf(config.apiKey) }
-    var baseUrl by remember(config) { mutableStateOf(config.baseUrl) }
     var model by remember(config) { mutableStateOf(config.model) }
     var systemPrompt by remember(config) { mutableStateOf(config.systemPrompt) }
 
@@ -646,13 +645,13 @@ private fun TextEnhancementPanel(
         enabled = enabled,
         apiType = apiType,
         apiKey = apiKey.trim(),
-        baseUrl = baseUrl.trim(),
+        baseUrl = PostProcessorConfig.baseUrlForType(apiType),
         model = model.trim(),
         systemPrompt = systemPrompt,
     )
 
     // Auto-save with debounce for text fields
-    LaunchedEffect(apiKey, baseUrl, model, systemPrompt) {
+    LaunchedEffect(apiKey, model, systemPrompt) {
         delay(500)
         val current = currentConfig()
         if (current != config) {
@@ -732,17 +731,15 @@ private fun TextEnhancementPanel(
                         text = { Text("Anthropic", color = Color.White) },
                         onClick = {
                             apiType = PostProcessorConfig.API_TYPE_ANTHROPIC
-                            baseUrl = PostProcessorConfig.DEFAULT_ANTHROPIC_URL
                             model = PostProcessorConfig.DEFAULT_ANTHROPIC_MODEL
                             apiTypeExpanded = false
                             onSave(currentConfig())
                         },
                     )
                     DropdownMenuItem(
-                        text = { Text("OpenAI-compatible", color = Color.White) },
+                        text = { Text("OpenAI-compatible (Groq)", color = Color.White) },
                         onClick = {
                             apiType = PostProcessorConfig.API_TYPE_OPENAI
-                            baseUrl = PostProcessorConfig.DEFAULT_OPENAI_URL
                             model = PostProcessorConfig.DEFAULT_OPENAI_MODEL
                             apiTypeExpanded = false
                             onSave(currentConfig())
@@ -763,26 +760,11 @@ private fun TextEnhancementPanel(
 
             Spacer(Modifier.height(12.dp))
 
-            // Base URL
-            OutlinedTextField(
-                value = baseUrl,
-                onValueChange = { baseUrl = it },
-                label = { Text("Base URL") },
-                singleLine = true,
-                modifier = Modifier.fillMaxWidth(),
-                colors = settingsTextFieldColors(),
-            )
-
-            Spacer(Modifier.height(12.dp))
-
-            // Model
-            OutlinedTextField(
-                value = model,
-                onValueChange = { model = it },
-                label = { Text("Model") },
-                singleLine = true,
-                modifier = Modifier.fillMaxWidth(),
-                colors = settingsTextFieldColors(),
+            // Model dropdown
+            ModelDropdown(
+                selected = model,
+                options = PostProcessorConfig.modelsForType(apiType),
+                onSelect = { model = it; onSave(currentConfig().copy(model = it)) },
             )
 
             Spacer(Modifier.height(12.dp))
