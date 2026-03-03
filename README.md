@@ -40,9 +40,12 @@ Get a key from your preferred transcription provider:
 
 #### Step 2: Install Hush
 
-1. Download the APK and open it on your Android phone
-2. If prompted, allow installation from unknown sources
-3. Open Hush — it will ask for microphone and notification permissions, grant both
+Hush is not on the Play Store yet — you install it directly from a file (this is called "sideloading" and is totally safe).
+
+1. On your Android phone, go to the [Releases page](https://github.com/leonbubova/hush-app/releases/latest) and download the `.apk` file
+2. Open the downloaded file — Android will ask if you want to install from this source, tap **Allow** (you only need to do this once)
+3. Tap **Install**, then **Open**
+4. Hush will ask for microphone and notification permissions — grant both
 
 #### Step 3: Configure your provider
 
@@ -77,9 +80,12 @@ Erstelle einen Key bei deinem bevorzugten Anbieter:
 
 #### Schritt 2: Hush installieren
 
-1. Lade die APK herunter und oeffne sie auf deinem Android-Handy
-2. Falls noetig, erlaube die Installation aus unbekannten Quellen
-3. Oeffne Hush — die App fragt nach Mikrofon- und Benachrichtigungsrechten, beides erlauben
+Hush ist noch nicht im Play Store — du installierst die App direkt als Datei (nennt sich "Sideloading", ist völlig sicher).
+
+1. Oeffne auf deinem Android-Handy die [Releases-Seite](https://github.com/leonbubova/hush-app/releases/latest) und lade die `.apk`-Datei herunter
+2. Oeffne die heruntergeladene Datei — Android fragt, ob du aus dieser Quelle installieren moechtest, tippe auf **Zulassen** (nur beim ersten Mal noetig)
+3. Tippe auf **Installieren**, dann auf **Oeffnen**
+4. Hush fragt nach Mikrofon- und Benachrichtigungsrechten — beides erlauben
 
 #### Schritt 3: Anbieter konfigurieren
 
