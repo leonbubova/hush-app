@@ -2,7 +2,7 @@
 
 [![License: BSL 1.1](https://img.shields.io/badge/License-BSL%201.1-blue.svg)](LICENSE)
 
-Android AI dictation app — speak anywhere, transcribe instantly. A native alternative to Wispr Flow.
+Privacy-first Android dictation app — speak anywhere, transcribe instantly, keep your data on your phone. A native alternative to Wispr Flow.
 
 <p align="center">
   <img src="screenshots/listening_baseline.png" width="280" alt="Hush listening screen" />
@@ -12,6 +12,7 @@ Android AI dictation app — speak anywhere, transcribe instantly. A native alte
 
 ## Features
 
+- **Privacy first** — on-device transcription by default, your audio never leaves your phone
 - **Voice-to-text anywhere** — double-tap volume down to start/stop recording from any app
 - **Auto-inject into text fields** — if a text field is focused, transcribed text is pasted directly at the cursor
 - **Clipboard fallback** — text is always copied to clipboard, even when auto-inject is active
@@ -43,10 +44,10 @@ Hush is not on the Play Store yet — you install it directly from a file (this 
 
 You can start using Hush right away — no API key needed. Just pick a provider in Settings:
 
-- **Moonshine (streaming)** — works completely offline, no account or API key required. Go to Settings, select Moonshine, and download the model (one-time, ~26 MB). Once downloaded, you can dictate without internet. Currently English only — German support is in the works.
+- **Moonshine (streaming)** — works completely offline, no account or API key required. Go to Settings, select Moonshine, and download the model (one-time, ~26 MB). Once downloaded, you can dictate without internet — even in flight mode. Currently English only — German support is in the works.
 - **Local (Whisper)** — also fully offline, no key needed. English only. Select it in Settings and download the model.
 
-If you want multilingual support or higher accuracy, you'll need a cloud provider with an API key:
+If you need multilingual support or higher accuracy, you can optionally use a cloud provider. This means your audio will be sent to that provider's servers for transcription — you bring your own API key, so there's no middleman and no Hush account involved.
 
 - **Voxtral (Mistral):** [console.mistral.ai](https://console.mistral.ai/) → API Keys
 - **OpenAI Whisper:** [platform.openai.com](https://platform.openai.com/) → API Keys
@@ -86,10 +87,10 @@ Hush ist noch nicht im Play Store — du installierst die App direkt als Datei (
 
 Du kannst Hush sofort benutzen — kein API-Key noetig. Waehle einfach einen Anbieter in den Einstellungen:
 
-- **Moonshine (Streaming)** — funktioniert komplett offline, kein Account oder API-Key noetig. Gehe in die Einstellungen, waehle Moonshine und lade das Modell herunter (einmalig, ~26 MB). Danach kannst du ohne Internet diktieren. Aktuell nur Englisch — Deutsch ist in Arbeit.
+- **Moonshine (Streaming)** — funktioniert komplett offline, kein Account oder API-Key noetig. Gehe in die Einstellungen, waehle Moonshine und lade das Modell herunter (einmalig, ~26 MB). Danach kannst du ohne Internet diktieren — sogar im Flugmodus. Aktuell nur Englisch — Deutsch ist in Arbeit.
 - **Local (Whisper)** — ebenfalls komplett offline, kein Key noetig. Nur Englisch. In den Einstellungen auswaehlen und Modell herunterladen.
 
-Wenn du mehrsprachige Unterstuetzung oder hoehere Genauigkeit moechtest, brauchst du einen Cloud-Anbieter mit API-Key:
+Wenn du mehrsprachige Unterstuetzung oder hoehere Genauigkeit brauchst, kannst du optional einen Cloud-Anbieter nutzen. Dabei wird dein Audio an die Server des Anbieters geschickt — du verwendest deinen eigenen API-Key, es gibt keinen Mittelsmann und keinen Hush-Account.
 
 - **Voxtral (Mistral):** [console.mistral.ai](https://console.mistral.ai/) → API Keys
 - **OpenAI Whisper:** [platform.openai.com](https://platform.openai.com/) → API Keys
@@ -243,11 +244,13 @@ adb install -r app/build/outputs/apk/release/app-release.apk
 
 ## On-Device Transcription
 
-Hush supports two on-device transcription engines — no internet or API keys required.
+Hush is built around on-device transcription — your audio is processed locally and never sent to any server. No account, no API key, no internet connection needed.
+
+Two engines are available:
 
 ### Moonshine (streaming)
 
-Real-time transcription that shows text as you speak. Uses the Moonshine SDK with ONNX Runtime models.
+Real-time transcription that shows text as you speak. Runs entirely on your phone — works in flight mode. Uses the Moonshine SDK with ONNX Runtime models.
 
 | Model | Size | Type | Language |
 |---|---|---|---|
@@ -387,11 +390,11 @@ scripts/emu.sh help               # full command list
 
 The script lives in `scripts/` (gitignored — contains device-specific paths). It is self-maintaining: when commands break due to UI changes, they should be fixed in-place. See `.claude/rules/emulator.md` for the full reference and maintenance rules.
 
-## Security
+## Privacy & Security
 
+- **No data collection** — Hush has no analytics, no telemetry, no servers. Nothing leaves your phone unless you explicitly choose a cloud provider.
+- **On-device by default** — Moonshine and Whisper run entirely on your phone, even in flight mode
+- **Cloud is opt-in** — if you choose a cloud provider, audio is sent directly to that provider using your own API key. Hush never sees or stores your audio.
 - API keys are stored in Android EncryptedSharedPreferences (AES-256)
 - No credentials are included in the APK — each user provides their own API key
-- Legacy Voxtral API keys are auto-migrated to the new provider config system
-- Release keystore and passwords are kept in `local.properties` (gitignored)
-- Test API keys are passed via `local.properties` instrumentation args (never in source)
 - Full credential audit performed 2026-02-24: no API keys, passwords, or secrets in codebase or git history
