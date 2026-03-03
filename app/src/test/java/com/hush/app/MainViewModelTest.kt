@@ -83,8 +83,8 @@ class MainViewModelTest {
     }
 
     @Test
-    fun `init state loads default provider as voxtral`() {
-        assertEquals(ProviderConfig.PROVIDER_VOXTRAL, viewModel.state.value.activeProviderId)
+    fun `init state loads default provider as moonshine`() {
+        assertEquals(ProviderConfig.PROVIDER_MOONSHINE, viewModel.state.value.activeProviderId)
     }
 
     @Test

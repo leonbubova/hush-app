@@ -45,9 +45,9 @@ class ProviderRepositoryTest {
     }
 
     @Test
-    fun `default active provider is voxtral`() {
+    fun `default active provider is moonshine`() {
         val id = ProviderRepository.getActiveProviderId(context)
-        assertEquals(ProviderConfig.PROVIDER_VOXTRAL, id)
+        assertEquals(ProviderConfig.PROVIDER_MOONSHINE, id)
     }
 
     @Test

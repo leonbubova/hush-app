@@ -42,9 +42,9 @@ Hush is not on the Play Store yet — you install it directly from a file (this 
 
 #### Step 2: Choose a transcription provider
 
-You can start using Hush right away — no API key needed. Just pick a provider in Settings:
+Moonshine is pre-selected as the default provider — no API key needed. Just download the model and go:
 
-- **Moonshine (streaming)** — works completely offline, no account or API key required. Go to Settings, select Moonshine, and download the model (one-time, ~26 MB). Once downloaded, you can dictate without internet — even in flight mode. Currently English only — German support is in the works.
+- **Moonshine (streaming, default)** — works completely offline, no account or API key required. On first launch, go to Settings and download the model (one-time, ~26 MB). Once downloaded, you can dictate without internet — even in flight mode. Currently English only — German support is in the works.
 - **Local (Whisper)** — also fully offline, no key needed. English only. Select it in Settings and download the model.
 
 If you need multilingual support or higher accuracy, you can optionally use a cloud provider. This means your audio will be sent to that provider's servers for transcription — you bring your own API key, so there's no middleman and no Hush account involved.
@@ -85,9 +85,9 @@ Hush ist noch nicht im Play Store — du installierst die App direkt als Datei (
 
 #### Schritt 2: Anbieter waehlen
 
-Du kannst Hush sofort benutzen — kein API-Key noetig. Waehle einfach einen Anbieter in den Einstellungen:
+Moonshine ist als Standard-Anbieter vorausgewaehlt — kein API-Key noetig. Einfach Modell herunterladen und los:
 
-- **Moonshine (Streaming)** — funktioniert komplett offline, kein Account oder API-Key noetig. Gehe in die Einstellungen, waehle Moonshine und lade das Modell herunter (einmalig, ~26 MB). Danach kannst du ohne Internet diktieren — sogar im Flugmodus. Aktuell nur Englisch — Deutsch ist in Arbeit.
+- **Moonshine (Streaming, Standard)** — funktioniert komplett offline, kein Account oder API-Key noetig. Beim ersten Start in die Einstellungen gehen und das Modell herunterladen (einmalig, ~26 MB). Danach kannst du ohne Internet diktieren — sogar im Flugmodus. Aktuell nur Englisch — Deutsch ist in Arbeit.
 - **Local (Whisper)** — ebenfalls komplett offline, kein Key noetig. Nur Englisch. In den Einstellungen auswaehlen und Modell herunterladen.
 
 Wenn du mehrsprachige Unterstuetzung oder hoehere Genauigkeit brauchst, kannst du optional einen Cloud-Anbieter nutzen. Dabei wird dein Audio an die Server des Anbieters geschickt — du verwendest deinen eigenen API-Key, es gibt keinen Mittelsmann und keinen Hush-Account.

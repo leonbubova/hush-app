@@ -32,7 +32,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         val history: List<String> = emptyList(),
         val errorMessage: String = "",
         val streamingText: String = "",
-        val activeProviderId: String = ProviderConfig.PROVIDER_VOXTRAL,
+        val activeProviderId: String = ProviderConfig.PROVIDER_MOONSHINE,
         val providerConfigs: Map<String, ProviderConfig> = emptyMap(),
         val accessibilityEnabled: Boolean = false,
         val currentScreen: AppScreen = AppScreen.HOME,

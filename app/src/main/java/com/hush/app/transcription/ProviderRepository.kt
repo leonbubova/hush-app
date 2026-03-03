@@ -42,8 +42,8 @@ object ProviderRepository {
     fun getActiveProviderId(context: Context): String {
         val prefs = getEncryptedPrefs(context)
         migrateIfNeeded(prefs)
-        return prefs.getString(KEY_ACTIVE_PROVIDER, ProviderConfig.PROVIDER_VOXTRAL)
-            ?: ProviderConfig.PROVIDER_VOXTRAL
+        return prefs.getString(KEY_ACTIVE_PROVIDER, ProviderConfig.PROVIDER_MOONSHINE)
+            ?: ProviderConfig.PROVIDER_MOONSHINE
     }
 
     fun setActiveProviderId(context: Context, providerId: String) {
@@ -106,12 +106,12 @@ object ProviderRepository {
     }
 
     val allProviderIds = listOf(
+        ProviderConfig.PROVIDER_MOONSHINE,
         ProviderConfig.PROVIDER_VOXTRAL,
         ProviderConfig.PROVIDER_VOXTRAL_REALTIME,
         ProviderConfig.PROVIDER_OPENAI,
         ProviderConfig.PROVIDER_GROQ,
         ProviderConfig.PROVIDER_LOCAL,
-        ProviderConfig.PROVIDER_MOONSHINE,
     )
 
     private fun migrateIfNeeded(prefs: SharedPreferences) {

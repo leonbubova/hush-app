@@ -29,7 +29,7 @@ object ErrorMessages {
         "Model not downloaded \u2014 download '$model' in Settings"
 
     fun moonshineNotDownloaded(): String =
-        "Moonshine model not downloaded \u2014 go to Settings"
+        "Download the Moonshine model first \u2014 open the menu \u2192 Settings \u2192 Download"
 
     fun modelLoadFailed(): String =
         "Failed to load model \u2014 try re-downloading in Settings"
