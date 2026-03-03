@@ -40,7 +40,7 @@ Get a key from your preferred transcription provider:
 
 #### Step 2: Install Hush
 
-Hush is not on the Play Store yet — you install it directly from a file (this is called "sideloading" and is totally safe).
+Hush is not on the Play Store yet — you install it directly from a file (this is called "sideloading"). Android will warn you about installing from unknown sources — that's a standard security prompt that appears for any app installed outside the Play Store. It exists because sideloaded apps skip Google's automated review. Since Hush is open source, you can inspect the code yourself or build it from source if you prefer.
 
 1. On your Android phone, go to the [Releases page](https://github.com/leonbubova/hush-app/releases/latest) and download the `.apk` file
 2. Open the downloaded file — Android will ask if you want to install from this source, tap **Allow** (you only need to do this once)
@@ -80,7 +80,7 @@ Erstelle einen Key bei deinem bevorzugten Anbieter:
 
 #### Schritt 2: Hush installieren
 
-Hush ist noch nicht im Play Store — du installierst die App direkt als Datei (nennt sich "Sideloading", ist völlig sicher).
+Hush ist noch nicht im Play Store — du installierst die App direkt als Datei (nennt sich "Sideloading"). Android wird dich warnen, dass du aus unbekannten Quellen installierst — das ist eine Standard-Sicherheitsmeldung, die bei jeder App ausserhalb des Play Stores erscheint. Sie kommt, weil sidegeloadete Apps Googles automatische Pruefung ueberspringen. Da Hush Open Source ist, kannst du den Code selbst einsehen oder die App aus dem Quellcode bauen.
 
 1. Oeffne auf deinem Android-Handy die [Releases-Seite](https://github.com/leonbubova/hush-app/releases/latest) und lade die `.apk`-Datei herunter
 2. Oeffne die heruntergeladene Datei — Android fragt, ob du aus dieser Quelle installieren moechtest, tippe auf **Zulassen** (nur beim ersten Mal noetig)
