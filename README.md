@@ -2,7 +2,7 @@
 
 [![License: BSL 1.1](https://img.shields.io/badge/License-BSL%201.1-blue.svg)](LICENSE)
 
-Privacy-first Android dictation app — speak anywhere, transcribe instantly, keep your data on your phone. A native alternative to Wispr Flow.
+The AI dictation app that works in flight mode. Speak anywhere, transcribe on your phone, no cloud required.
 
 <p align="center">
   <img src="screenshots/listening_baseline.png" width="280" alt="Hush listening screen" />
