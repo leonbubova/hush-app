@@ -398,3 +398,7 @@ The script lives in `scripts/` (gitignored — contains device-specific paths). 
 - API keys are stored in Android EncryptedSharedPreferences (AES-256)
 - No credentials are included in the APK — each user provides their own API key
 - Full credential audit performed 2026-02-24: no API keys, passwords, or secrets in codebase or git history
+
+## Acknowledgements
+
+Hush's on-device streaming transcription is powered by [Moonshine](https://github.com/usefulsensors/moonshine) from [Useful Sensors](https://usefulsensors.com/). Moonshine is the reason Hush can transcribe your voice in real time, entirely on your phone, with no internet connection — even in flight mode. It's fast, it's tiny (~26 MB), and it just works. Discovering Moonshine was one of those moments where everything clicked — it's exactly the kind of technology that makes privacy-first apps like this possible. Huge thanks to [Pete Warden](https://github.com/petewarden) and the Useful Sensors team for building something so good and making it available to the open-source community. ❤️
