@@ -241,25 +241,41 @@ adb install -r app/build/outputs/apk/release/app-release.apk
 - `POST_NOTIFICATIONS` — status notification
 - Accessibility Service — volume key detection + text field injection
 
-## Local (On-Device) Transcription
+## On-Device Transcription
 
-Hush supports local on-device transcription using ExecuTorch with Whisper models. No internet or API keys required.
+Hush supports two on-device transcription engines — no internet or API keys required.
 
-### Supported models
+### Moonshine (streaming)
 
-| Model | Size | Latency (30s audio, flagship) | Quality |
+Real-time transcription that shows text as you speak. Uses the Moonshine SDK with ONNX Runtime models.
+
+| Model | Size | Type | Language |
 |---|---|---|---|
-| Whisper tiny.en | ~77 MB | ~1-2s | ~3-5% WER on clean speech |
+| Moonshine tiny | ~26 MB | Streaming (live text) | English |
 
-### Exporting the Whisper model
+1. Open Settings → select "Moonshine"
+2. Download the model (one-time, ~26 MB)
+3. Start dictating — text appears in real time as you speak
 
-Models are exported using [`optimum-executorch`](https://github.com/huggingface/optimum-executorch) with 3 quantization variants (INT4, INT8, FP32). See the [hush-app-models](https://github.com/leonbubova/hush-app-models) repo for export scripts and pre-built models.
+### Whisper (batch)
 
-### Using local transcription
+Transcribes after you finish speaking. Uses ExecuTorch with quantized Whisper models.
+
+| Model | Size | Quantization | Language |
+|---|---|---|---|
+| Whisper tiny.en INT4 | ~132 MB | 4-bit | English |
+| Whisper tiny.en INT8 | ~136 MB | 8-bit | English |
+| Whisper tiny.en FP32 | ~220 MB | Full precision | English |
 
 1. Open Settings → select "Local (On-Device)"
-2. Download the Whisper model (one-time, ~77 MB)
+2. Choose a model variant and download it
 3. Start dictating — works fully offline
+
+INT4 is the default and recommended for most devices — smallest download with minimal quality loss.
+
+### Exporting Whisper models
+
+Models are exported using [`optimum-executorch`](https://github.com/huggingface/optimum-executorch) with 3 quantization variants (INT4, INT8, FP32). See the [hush-app-models](https://github.com/leonbubova/hush-app-models) repo for export scripts and pre-built models.
 
 ## Testing
 
