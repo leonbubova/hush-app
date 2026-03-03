@@ -353,6 +353,31 @@ class ModelManagerTest {
     }
 
     @Test
+    fun `all AVAILABLE_MOONSHINE_MODELS have checksums for all components`() {
+        for (model in ModelManager.AVAILABLE_MOONSHINE_MODELS) {
+            assertEquals(
+                "Model ${model.id} should have checksum for every component",
+                model.components.size, model.checksums.size
+            )
+            for (component in model.components) {
+                val checksum = model.checksums[component]
+                assertNotNull(
+                    "Model ${model.id} missing checksum for $component",
+                    checksum
+                )
+                assertEquals(
+                    "Model ${model.id} checksum for $component should be 64 hex chars",
+                    64, checksum!!.length
+                )
+                assertTrue(
+                    "Model ${model.id} checksum for $component should be lowercase hex",
+                    checksum.matches(Regex("^[0-9a-f]{64}$"))
+                )
+            }
+        }
+    }
+
+    @Test
     fun `refreshStatuses updates status to READY when file exists`() {
         val modelsDir = manager.getModelsDir()
         modelsDir.mkdirs()

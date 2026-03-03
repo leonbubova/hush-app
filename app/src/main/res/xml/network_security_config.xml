@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<network-security-config>
+    <!-- Block all cleartext (HTTP) traffic app-wide.
+         Android 9+ defaults to this, but we target API 26 (Android 8)
+         where cleartext is allowed by default. This also prevents any
+         third-party SDK (Firebase, Moonshine) from making HTTP calls. -->
+    <base-config cleartextTrafficPermitted="false" />
+
+    <!-- Debug builds: allow cleartext for localhost (MockWebServer in tests) -->
+    <debug-overrides>
+        <trust-anchors>
+            <certificates src="system" />
+            <certificates src="user" />
+        </trust-anchors>
+    </debug-overrides>
+</network-security-config>

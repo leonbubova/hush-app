@@ -7,13 +7,11 @@ import android.os.Handler
 import android.os.Looper
 import android.util.Base64
 import android.util.Log
-import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Response
 import okhttp3.WebSocket
 import okhttp3.WebSocketListener
 import org.json.JSONObject
-import java.util.concurrent.TimeUnit
 
 class VoxtralRealtimeProvider(private val config: ProviderConfig.VoxtralRealtime) {
 
@@ -22,9 +20,7 @@ class VoxtralRealtimeProvider(private val config: ProviderConfig.VoxtralRealtime
         private const val SAMPLE_RATE = 16000
         private const val CHUNK_DURATION_MS = 480
         private const val CHUNK_SIZE_BYTES = SAMPLE_RATE * 2 * CHUNK_DURATION_MS / 1000 // 15360 bytes (PCM16)
-        private val client = OkHttpClient.Builder()
-            .readTimeout(0, TimeUnit.MILLISECONDS)
-            .build()
+        private val client = HttpClientFactory.createStreamingClient()
     }
 
     private val mainHandler = Handler(Looper.getMainLooper())

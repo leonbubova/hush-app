@@ -5,13 +5,16 @@ import com.hush.app.BuildConfig
 import android.app.PendingIntent
 import android.app.Service
 import android.content.ClipData
+import android.content.ClipDescription
 import android.content.ClipboardManager
 import android.content.ComponentName
 import android.content.Intent
 import android.os.Binder
+import android.os.Build
 import android.os.Handler
 import android.os.IBinder
 import android.os.Looper
+import android.os.PersistableBundle
 import android.service.quicksettings.TileService
 import android.util.Log
 import androidx.core.app.NotificationCompat
@@ -464,7 +467,33 @@ class DictationService : Service() {
 
     private fun copyToClipboard(text: String) {
         val clipboard = getSystemService(CLIPBOARD_SERVICE) as ClipboardManager
-        clipboard.setPrimaryClip(ClipData.newPlainText("Transcription", text))
+        val clip = ClipData.newPlainText("Transcription", text)
+
+        // Android 13+: mark as sensitive so the clipboard preview is redacted
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            clip.description.extras = PersistableBundle().apply {
+                putBoolean(ClipDescription.EXTRA_IS_SENSITIVE, true)
+            }
+        }
+
+        clipboard.setPrimaryClip(clip)
+
+        // Android 8-12 (API 26-32): clipboard is globally readable by any app.
+        // Auto-clear after 60 seconds to limit exposure of transcribed text.
+        // Android 13+ auto-clears after ~60s natively, so this is only needed for older APIs.
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) {
+            mainHandler.postDelayed({
+                try {
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+                        clipboard.clearPrimaryClip()
+                    } else {
+                        clipboard.setPrimaryClip(ClipData.newPlainText("", ""))
+                    }
+                } catch (e: Exception) {
+                    Log.e(TAG, "Failed to clear clipboard", e)
+                }
+            }, 60_000L)
+        }
     }
 
     private fun updateState(state: DictationState, text: String? = null) {
