@@ -43,10 +43,10 @@ Hush is not on the Play Store yet — you install it directly from a file (this 
 
 You can start using Hush right away — no API key needed. Just pick a provider in Settings:
 
-- **Moonshine (streaming)** — works completely offline, no account or API key required. Go to Settings, select Moonshine, and download the model (one-time, ~55 MB). Once downloaded, you can dictate without internet.
-- **Local (Whisper)** — also fully offline, no key needed. Select it in Settings and download the model.
+- **Moonshine (streaming)** — works completely offline, no account or API key required. Go to Settings, select Moonshine, and download the model (one-time, ~26 MB). Once downloaded, you can dictate without internet. Currently English only — German support is in the works.
+- **Local (Whisper)** — also fully offline, no key needed. English only. Select it in Settings and download the model.
 
-If you want to use a cloud provider for higher accuracy or multilingual support, you'll need an API key:
+If you want multilingual support or higher accuracy, you'll need a cloud provider with an API key:
 
 - **Voxtral (Mistral):** [console.mistral.ai](https://console.mistral.ai/) → API Keys
 - **OpenAI Whisper:** [platform.openai.com](https://platform.openai.com/) → API Keys
@@ -86,10 +86,10 @@ Hush ist noch nicht im Play Store — du installierst die App direkt als Datei (
 
 Du kannst Hush sofort benutzen — kein API-Key noetig. Waehle einfach einen Anbieter in den Einstellungen:
 
-- **Moonshine (Streaming)** — funktioniert komplett offline, kein Account oder API-Key noetig. Gehe in die Einstellungen, waehle Moonshine und lade das Modell herunter (einmalig, ~55 MB). Danach kannst du ohne Internet diktieren.
-- **Local (Whisper)** — ebenfalls komplett offline, kein Key noetig. In den Einstellungen auswaehlen und Modell herunterladen.
+- **Moonshine (Streaming)** — funktioniert komplett offline, kein Account oder API-Key noetig. Gehe in die Einstellungen, waehle Moonshine und lade das Modell herunter (einmalig, ~26 MB). Danach kannst du ohne Internet diktieren. Aktuell nur Englisch — Deutsch ist in Arbeit.
+- **Local (Whisper)** — ebenfalls komplett offline, kein Key noetig. Nur Englisch. In den Einstellungen auswaehlen und Modell herunterladen.
 
-Wenn du einen Cloud-Anbieter fuer hoehere Genauigkeit oder mehrsprachige Unterstuetzung nutzen moechtest, brauchst du einen API-Key:
+Wenn du mehrsprachige Unterstuetzung oder hoehere Genauigkeit moechtest, brauchst du einen Cloud-Anbieter mit API-Key:
 
 - **Voxtral (Mistral):** [console.mistral.ai](https://console.mistral.ai/) → API Keys
 - **OpenAI Whisper:** [platform.openai.com](https://platform.openai.com/) → API Keys
