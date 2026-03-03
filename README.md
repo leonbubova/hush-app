@@ -30,15 +30,7 @@ Android AI dictation app — speak anywhere, transcribe instantly. A native alte
 
 ### English
 
-#### Step 1: Get an API key
-
-Get a key from your preferred transcription provider:
-
-- **Voxtral (Mistral):** [console.mistral.ai](https://console.mistral.ai/) → API Keys
-- **OpenAI Whisper:** [platform.openai.com](https://platform.openai.com/) → API Keys
-- **Groq:** [console.groq.com](https://console.groq.com/) → API Keys
-
-#### Step 2: Install Hush
+#### Step 1: Install Hush
 
 Hush is not on the Play Store yet — you install it directly from a file (this is called "sideloading"). Android will warn you about installing from unknown sources — that's a standard security prompt that appears for any app installed outside the Play Store. It exists because sideloaded apps skip Google's automated review. Since Hush is open source, you can inspect the code yourself or build it from source if you prefer. As a general rule, only sideload apps from sources you trust.
 
@@ -47,38 +39,41 @@ Hush is not on the Play Store yet — you install it directly from a file (this 
 3. Tap **Install**, then **Open**
 4. Hush will ask for microphone and notification permissions — grant both
 
-#### Step 3: Configure your provider
+#### Step 2: Choose a transcription provider
 
-1. Open the drawer (hamburger menu) and tap **Settings**
-2. Select your transcription provider
-3. Paste your API key and tap **Save**
+You can start using Hush right away — no API key needed. Just pick a provider in Settings:
 
-#### Step 4: Enable the accessibility service
+- **Moonshine (streaming)** — works completely offline, no account or API key required. Go to Settings, select Moonshine, and download the model (one-time, ~55 MB). Once downloaded, you can dictate without internet.
+- **Local (Whisper)** — also fully offline, no key needed. Select it in Settings and download the model.
+
+If you want to use a cloud provider for higher accuracy or multilingual support, you'll need an API key:
+
+- **Voxtral (Mistral):** [console.mistral.ai](https://console.mistral.ai/) → API Keys
+- **OpenAI Whisper:** [platform.openai.com](https://platform.openai.com/) → API Keys
+- **Groq:** [console.groq.com](https://console.groq.com/) → API Keys
+
+To configure: open the drawer (hamburger menu) → **Settings** → select your provider → paste your API key.
+
+#### Step 3: Start dictating
+
+Open the app and tap the ring to start recording. Tap again to stop — your speech is transcribed and copied to the clipboard.
+
+#### Step 4: Use it anywhere (optional)
+
+This step is optional — you can skip it and just use Hush from inside the app. But if you want to dictate into *any* text field on your phone (messages, notes, browser, etc.), you need to enable the accessibility service:
 
 1. Tap the "Enable background shortcut" banner in the app
 2. This opens Android's accessibility settings
 3. Find **Hush** in the list and enable it
 4. Confirm the permission dialog
 
-#### Step 5: Start dictating
-
-- **In the app:** tap the ring to start/stop recording
-- **From anywhere:** double-tap volume down to start, double-tap again to stop
-- Transcribed text is automatically pasted into the focused text field, or copied to clipboard
+Once enabled, double-tap the volume down button to start dictating from anywhere. Double-tap again to stop. The transcribed text is automatically pasted into whatever text field you're typing in.
 
 ---
 
 ### Deutsch
 
-#### Schritt 1: API-Key erstellen
-
-Erstelle einen Key bei deinem bevorzugten Anbieter:
-
-- **Voxtral (Mistral):** [console.mistral.ai](https://console.mistral.ai/) → API Keys
-- **OpenAI Whisper:** [platform.openai.com](https://platform.openai.com/) → API Keys
-- **Groq:** [console.groq.com](https://console.groq.com/) → API Keys
-
-#### Schritt 2: Hush installieren
+#### Schritt 1: Hush installieren
 
 Hush ist noch nicht im Play Store — du installierst die App direkt als Datei (nennt sich "Sideloading"). Android wird dich warnen, dass du aus unbekannten Quellen installierst — das ist eine Standard-Sicherheitsmeldung, die bei jeder App ausserhalb des Play Stores erscheint. Sie kommt, weil sidegeloadete Apps Googles automatische Pruefung ueberspringen. Da Hush Open Source ist, kannst du den Code selbst einsehen oder die App aus dem Quellcode bauen. Generell gilt: installiere nur Apps aus Quellen, denen du vertraust.
 
@@ -87,24 +82,35 @@ Hush ist noch nicht im Play Store — du installierst die App direkt als Datei (
 3. Tippe auf **Installieren**, dann auf **Oeffnen**
 4. Hush fragt nach Mikrofon- und Benachrichtigungsrechten — beides erlauben
 
-#### Schritt 3: Anbieter konfigurieren
+#### Schritt 2: Anbieter waehlen
 
-1. Oeffne das Menue (Hamburger-Symbol) und tippe auf **Settings**
-2. Waehle deinen Transkriptions-Anbieter
-3. Fuege deinen API-Key ein und tippe auf **Save**
+Du kannst Hush sofort benutzen — kein API-Key noetig. Waehle einfach einen Anbieter in den Einstellungen:
 
-#### Schritt 4: Bedienungshilfe aktivieren
+- **Moonshine (Streaming)** — funktioniert komplett offline, kein Account oder API-Key noetig. Gehe in die Einstellungen, waehle Moonshine und lade das Modell herunter (einmalig, ~55 MB). Danach kannst du ohne Internet diktieren.
+- **Local (Whisper)** — ebenfalls komplett offline, kein Key noetig. In den Einstellungen auswaehlen und Modell herunterladen.
+
+Wenn du einen Cloud-Anbieter fuer hoehere Genauigkeit oder mehrsprachige Unterstuetzung nutzen moechtest, brauchst du einen API-Key:
+
+- **Voxtral (Mistral):** [console.mistral.ai](https://console.mistral.ai/) → API Keys
+- **OpenAI Whisper:** [platform.openai.com](https://platform.openai.com/) → API Keys
+- **Groq:** [console.groq.com](https://console.groq.com/) → API Keys
+
+Zum Einrichten: Menue oeffnen (Hamburger-Symbol) → **Settings** → Anbieter waehlen → API-Key einfuegen.
+
+#### Schritt 3: Diktieren
+
+Oeffne die App und tippe auf den Ring um die Aufnahme zu starten. Nochmal tippen zum Stoppen — dein Text wird transkribiert und in die Zwischenablage kopiert.
+
+#### Schritt 4: Ueberall nutzen (optional)
+
+Dieser Schritt ist optional — du kannst Hush auch einfach nur in der App benutzen. Wenn du aber in *jedes* Textfeld auf deinem Handy diktieren moechtest (Nachrichten, Notizen, Browser, etc.), musst du die Bedienungshilfe aktivieren:
 
 1. Tippe auf das Banner "Enable background shortcut" in der App
 2. Es oeffnen sich die Android-Bedienungshilfe-Einstellungen
 3. Finde **Hush** in der Liste und aktiviere es
 4. Bestaetige den Berechtigungsdialog
 
-#### Schritt 5: Diktieren
-
-- **In der App:** Tippe auf den Ring um die Aufnahme zu starten/stoppen
-- **Von ueberall:** Doppelt auf Leiser-Taste druecken zum Starten, nochmal doppelt zum Stoppen
-- Der transkribierte Text wird automatisch in das aktive Textfeld eingefuegt oder in die Zwischenablage kopiert
+Danach: doppelt auf die Leiser-Taste druecken um von ueberall zu diktieren. Nochmal doppelt zum Stoppen. Der Text wird automatisch in das aktive Textfeld eingefuegt.
 
 ## Architecture
 
