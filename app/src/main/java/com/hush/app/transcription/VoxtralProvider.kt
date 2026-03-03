@@ -3,12 +3,10 @@ package com.hush.app.transcription
 import android.util.Log
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.MultipartBody
-import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.RequestBody.Companion.asRequestBody
 import org.json.JSONObject
 import java.io.File
-import java.util.concurrent.TimeUnit
 
 class VoxtralProvider(
     private val config: ProviderConfig.Voxtral,
@@ -62,10 +60,6 @@ class VoxtralProvider(
 
     companion object {
         private const val TAG = "VoxtralProvider"
-        private val client = OkHttpClient.Builder()
-            .connectTimeout(30, TimeUnit.SECONDS)
-            .readTimeout(120, TimeUnit.SECONDS)
-            .writeTimeout(120, TimeUnit.SECONDS)
-            .build()
+        private val client = HttpClientFactory.createApiClient()
     }
 }

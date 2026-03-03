@@ -7,12 +7,10 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.withContext
-import okhttp3.OkHttpClient
 import okhttp3.Request
 import java.io.File
 import java.io.FileOutputStream
 import java.security.MessageDigest
-import java.util.concurrent.TimeUnit
 
 data class ModelInfo(
     val id: String,
@@ -36,6 +34,7 @@ data class MoonshineModelInfo(
     val displayName: String,
     val baseUrl: String,
     val components: List<String>,
+    val checksums: Map<String, String>,
     val totalSizeBytes: Long,
 ) {
     val dirName: String get() = id
@@ -93,6 +92,15 @@ class ModelManager(private val context: Context) {
                     "streaming_config.json",
                     "tokenizer.bin",
                 ),
+                checksums = mapOf(
+                    "adapter.ort" to "df13e655b29d279911fcb42d8b91b0e655b8fe32b7ba1f463ece663ce55ae6eb",
+                    "cross_kv.ort" to "5acfca68f7bb068c68c1960b54e215995ba07ee46b61645b78bff010a14e5a92",
+                    "decoder_kv.ort" to "6e3828f1db4b634bc525cb8ba1f0b628ec56059168f0336ad060891c7c1c9154",
+                    "encoder.ort" to "96dde726be90c4429f3bc458d04e3ea5bd1818a5fdcd0152edf4c07b8e405c07",
+                    "frontend.ort" to "bbdf5edb120cb3df1adf9ebc07c35136539b007a7047fd148c6f2960fc56fcf1",
+                    "streaming_config.json" to "74fe5ddebd63b17caf59e8a3b18c17547ff7bce1642050edbb1c3962674f8950",
+                    "tokenizer.bin" to "6884b35fd6377d4c4d32336a0bc152f36b64d1e45b6503683cdc238250a8472d",
+                ),
                 totalSizeBytes = 27_262_976L,
             ),
         )
@@ -110,10 +118,7 @@ class ModelManager(private val context: Context) {
     private val _downloadProgress = MutableStateFlow<Map<String, Float>>(emptyMap())
     val downloadProgress: StateFlow<Map<String, Float>> = _downloadProgress.asStateFlow()
 
-    private val client = OkHttpClient.Builder()
-        .connectTimeout(30, TimeUnit.SECONDS)
-        .readTimeout(5, TimeUnit.MINUTES)
-        .build()
+    private val client = HttpClientFactory.createDownloadClient()
 
     init {
         refreshStatuses()
@@ -328,6 +333,7 @@ class ModelManager(private val context: Context) {
 
                 val targetFile = File(dir, component)
                 val tempFile = File(dir, "$component.tmp")
+                val digest = MessageDigest.getInstance("SHA-256")
 
                 FileOutputStream(tempFile).use { output ->
                     body.byteStream().use { input ->
@@ -336,13 +342,26 @@ class ModelManager(private val context: Context) {
                             val read = input.read(buffer)
                             if (read == -1) break
                             output.write(buffer, 0, read)
+                            digest.update(buffer, 0, read)
                         }
                     }
                 }
 
+                val actualHash = digest.digest().joinToString("") { "%02x".format(it) }
+                val expectedHash = info.checksums[component]
+                if (expectedHash != null && actualHash != expectedHash) {
+                    tempFile.delete()
+                    dir.deleteRecursively()
+                    updateStatus(modelId, ModelStatus.ERROR)
+                    Log.e(TAG, "SHA256 mismatch for $component: expected=$expectedHash, actual=$actualHash")
+                    return Result.failure(
+                        RuntimeException("SHA256 mismatch for $component: expected=$expectedHash, actual=$actualHash")
+                    )
+                }
+
                 tempFile.renameTo(targetFile)
                 updateProgress(modelId, (index + 1).toFloat() / totalComponents)
-                Log.i(TAG, "Downloaded moonshine component: $component")
+                Log.i(TAG, "Downloaded moonshine component: $component (SHA256 verified: $actualHash)")
             }
 
             updateStatus(modelId, ModelStatus.READY)

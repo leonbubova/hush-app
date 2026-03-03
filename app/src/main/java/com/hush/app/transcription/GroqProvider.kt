@@ -3,12 +3,10 @@ package com.hush.app.transcription
 import android.util.Log
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.MultipartBody
-import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.RequestBody.Companion.asRequestBody
 import org.json.JSONObject
 import java.io.File
-import java.util.concurrent.TimeUnit
 
 class GroqProvider(
     private val config: ProviderConfig.Groq,
@@ -64,10 +62,6 @@ class GroqProvider(
     companion object {
         private const val TAG = "GroqProvider"
         private const val ENDPOINT = "https://api.groq.com/openai/v1/audio/transcriptions"
-        private val client = OkHttpClient.Builder()
-            .connectTimeout(30, TimeUnit.SECONDS)
-            .readTimeout(120, TimeUnit.SECONDS)
-            .writeTimeout(120, TimeUnit.SECONDS)
-            .build()
+        private val client = HttpClientFactory.createApiClient()
     }
 }

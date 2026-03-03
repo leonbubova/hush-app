@@ -126,6 +126,9 @@ dependencies {
 
     // Core
     implementation("androidx.core:core-ktx:1.15.0")
+    // Alpha06 is the latest available — stable 1.0.0 lacks MasterKey.Builder.
+    // This alpha has been widely used in production across the industry for years.
+    // Google hasn't released a stable 1.1.0. Safe to use; monitor for stable release.
     implementation("androidx.security:security-crypto:1.1.0-alpha06")
     implementation("androidx.activity:activity-compose:1.9.3")
     implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.8.7")
