@@ -297,7 +297,7 @@ Models are exported using [`optimum-executorch`](https://github.com/huggingface/
 | `ProviderFactoryTest` | 9 | Provider resolution, display names, fallback, local provider |
 | `AudioConverterTest` | 10 | Resampling math, stereo→mono, Int16→Float32, normalization |
 | `LocalProviderTest` | 6 | Model not downloaded errors, metadata, requiresNetwork=false |
-| `ModelManagerTest` | 10 | Model status, file paths, download/delete, available models |
+| `ModelManagerTest` | 33 | Model status, file paths, download/delete, orphan cleanup, moonshine lifecycle, checksums |
 | `UsageRepositoryTest` | 8 | Record/load/clear, MAX_SESSIONS cap, malformed JSON |
 | `HistoryRepositoryTest` | 6 | Add/load/clear, prepend order, blank text no-op, accumulation |
 | `MelSpectrogramTest` | 12 | Output shape, Hann window, mel filterbank, sine wave energy, log scaling |
@@ -398,6 +398,14 @@ The script lives in `scripts/` (gitignored — contains device-specific paths). 
 - API keys are stored in Android EncryptedSharedPreferences (AES-256)
 - No credentials are included in the APK — each user provides their own API key
 - Full credential audit performed 2026-02-24: no API keys, passwords, or secrets in codebase or git history
+
+### Supply chain & runtime hardening
+
+- **Model integrity verification** — all Whisper and Moonshine model files are verified against SHA-256 checksums during download. Tampered or corrupted files are rejected before they can be loaded.
+- **Certificate pinning** — TLS connections to all API providers (OpenAI, Groq, Mistral, Anthropic) and model download servers (Moonshine CDN, GitHub) are pinned to intermediate CA certificates. Prevents MITM interception of API keys, audio, and transcriptions on compromised networks.
+- **No cleartext traffic** — HTTP is blocked app-wide via Android network security config, even on Android 8-9 where cleartext is allowed by default.
+- **Clipboard protection** — transcribed text is marked as sensitive on Android 13+ (clipboard preview shows "•••"). On Android 8-12, clipboard is automatically cleared after 60 seconds.
+- **Dependency verification** — all Gradle dependencies are checked against SHA-256 checksums (`gradle/verification-metadata.xml`). The build fails if any artifact is modified or replaced.
 
 ## Acknowledgements
 
