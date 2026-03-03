@@ -4,6 +4,12 @@
 
 Android AI dictation app — speak anywhere, transcribe instantly. A native alternative to Wispr Flow.
 
+<p align="center">
+  <img src="screenshots/listening_baseline.png" width="280" alt="Hush listening screen" />
+  &nbsp;&nbsp;
+  <img src="screenshots/post_proccessing.png" width="280" alt="LLM post-processing settings" />
+</p>
+
 ## Features
 
 - **Voice-to-text anywhere** — double-tap volume down to start/stop recording from any app
@@ -15,6 +21,7 @@ Android AI dictation app — speak anywhere, transcribe instantly. A native alte
 - **Moonshine streaming** — real-time on-device transcription via Moonshine SDK, live text as you speak
 - **Streaming overlay** — floating overlay shows live transcription text in external apps, single paste on stop
 - **Settings screen** — switch providers, configure API keys and models per provider
+- **LLM post-processing** — optional AI cleanup of transcriptions (grammar, punctuation, formatting) via Anthropic or any OpenAI-compatible API
 - **Custom blob/ring UI** — dark theme with animated glowing blobs and minimal ring-based mic button
 - **Transcription history** — recent transcriptions stored locally with tap-to-copy
 - **Usage dashboard** — streak tracking, transcription stats, weekly activity charts, cost estimates
@@ -124,6 +131,8 @@ transcription/
   ModelManager          — model download, storage, and lifecycle management
   MoonshineProvider     — streaming on-device transcription via Moonshine SDK
   StreamingOverlayManager — floating TYPE_ACCESSIBILITY_OVERLAY for live streaming text in external apps
+  PostProcessorConfig   — configuration for LLM post-processing (API type, key, model, prompt)
+  TextPostProcessor     — LLM-based transcription cleanup via Anthropic or OpenAI-compatible APIs
 ```
 
 ### Auto-inject flow
@@ -159,6 +168,7 @@ DictationService.startStreaming()
 - OkHttp for API calls
 - EncryptedSharedPreferences for secure credential storage
 - Moonshine SDK (`ai.moonshine:moonshine-voice`) for streaming on-device transcription
+- LLM post-processing via Anthropic Messages API or OpenAI-compatible Chat Completions API
 - Coroutines for async transcription
 
 ## Compatibility
