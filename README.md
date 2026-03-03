@@ -19,7 +19,7 @@ The AI dictation app that works in flight mode. Speak anywhere, transcribe on yo
 - **Background service** — persistent foreground notification with quick-action controls
 - **Multi-provider transcription** — choose between Voxtral (Mistral), OpenAI Whisper, Groq, Local (on-device), or Moonshine (streaming)
 - **Local on-device transcription** — Whisper tiny.en via ExecuTorch, no internet required
-- **Moonshine streaming** — real-time on-device transcription via Moonshine SDK, live text as you speak
+- **Moonshine streaming** — real-time on-device transcription via [Moonshine SDK](#acknowledgements), live text as you speak
 - **Streaming overlay** — floating overlay shows live transcription text in external apps, single paste on stop
 - **Settings screen** — switch providers, configure API keys and models per provider
 - **LLM post-processing** — optional AI cleanup of transcriptions (grammar, punctuation, formatting) via Anthropic or any OpenAI-compatible API. On-device post-processing is coming soon.
@@ -401,4 +401,10 @@ The script lives in `scripts/` (gitignored — contains device-specific paths). 
 
 ## Acknowledgements
 
-Hush's on-device streaming transcription is powered by [Moonshine](https://github.com/usefulsensors/moonshine) from [Useful Sensors](https://usefulsensors.com/). Moonshine is the reason Hush can transcribe your voice in real time, entirely on your phone, with no internet connection — even in flight mode. It's fast, it's tiny (~26 MB), and it just works. Discovering Moonshine was one of those moments where everything clicked — it's exactly the kind of technology that makes privacy-first apps like this possible. Huge thanks to [Pete Warden](https://github.com/petewarden) and the Useful Sensors team for building something so good and making it available to the open-source community. ❤️
+Hush's on-device streaming transcription is powered by [Moonshine](https://github.com/usefulsensors/moonshine) from [Useful Sensors](https://usefulsensors.com/).
+
+Moonshine is the reason Hush can transcribe your voice in real time, entirely on your phone, with no internet connection — even in flight mode. It's fast, it's tiny (~26 MB), and it just works.
+
+Discovering Moonshine was one of those moments where everything clicked — it's exactly the kind of technology that makes privacy-first apps like this possible.
+
+Huge thanks to [Pete Warden](https://github.com/petewarden) and the Useful Sensors team for building something so good and making it available to the open-source community. ❤️
