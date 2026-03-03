@@ -22,7 +22,7 @@ The AI dictation app that works in flight mode. Speak anywhere, transcribe on yo
 - **Moonshine streaming** — real-time on-device transcription via Moonshine SDK, live text as you speak
 - **Streaming overlay** — floating overlay shows live transcription text in external apps, single paste on stop
 - **Settings screen** — switch providers, configure API keys and models per provider
-- **LLM post-processing** — optional AI cleanup of transcriptions (grammar, punctuation, formatting) via Anthropic or any OpenAI-compatible API
+- **LLM post-processing** — optional AI cleanup of transcriptions (grammar, punctuation, formatting) via Anthropic or any OpenAI-compatible API. On-device post-processing is coming soon.
 - **Custom blob/ring UI** — dark theme with animated glowing blobs and minimal ring-based mic button
 - **Transcription history** — recent transcriptions stored locally with tap-to-copy
 - **Usage dashboard** — streak tracking, transcription stats, weekly activity charts, cost estimates
