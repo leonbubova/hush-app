@@ -5,9 +5,7 @@
 The AI dictation app that works in flight mode. Speak anywhere, transcribe on your phone, no cloud required.
 
 <p align="center">
-  <video src="screenshots/post_processing_video.mp4" width="320" autoplay loop muted playsinline>
-    Your browser does not support the video tag.
-  </video>
+  <img src="screenshots/post_processing_video.gif" width="320" alt="Hush post-processing demo" />
 </p>
 
 ### Smart Post-Processing — Fix, Edit, and Format by Voice
