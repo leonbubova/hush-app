@@ -22,11 +22,11 @@ Say *"delete the last sentence"*, *"scratch that"*, *"replace meeting with call"
   </video>
 </p>
 
-Works with Anthropic (Claude) or any OpenAI-compatible API. You control the formatting rules — the app ships with sensible defaults, and you can customize them in Settings.
+Works best with Claude Sonnet or Groq (Llama) — Haiku is too small to reliably follow editing commands. You control the formatting rules — the app ships with sensible defaults, and you can customize them in Settings.
 
 ## Features
 
-- **Smart post-processing** — AI cleans up your dictation: fixes grammar, removes filler words, follows spoken editing commands ("delete that", "make it a list", "replace X with Y"), and formats text — all via LLM. Powered by Claude Sonnet or any OpenAI-compatible API. Customizable rules in Settings.
+- **Smart post-processing** — AI cleans up your dictation: fixes grammar, removes filler words, follows spoken editing commands ("delete that", "make it a list", "replace X with Y"), and formats text — all via LLM. Works best with Claude Sonnet or Groq (Llama). Customizable rules in Settings.
 - **Privacy first** — on-device transcription by default, your audio never leaves your phone
 - **Voice-to-text anywhere** — double-tap volume down to start/stop recording from any app
 - **Auto-inject into text fields** — if a text field is focused, transcribed text is pasted directly at the cursor
