@@ -15,7 +15,7 @@ class PostProcessorConfigTest {
         assertEquals("", config.apiKey)
         assertEquals(PostProcessorConfig.DEFAULT_ANTHROPIC_URL, config.baseUrl)
         assertEquals(PostProcessorConfig.DEFAULT_ANTHROPIC_MODEL, config.model)
-        assertEquals(PostProcessorConfig.DEFAULT_SYSTEM_PROMPT, config.systemPrompt)
+        assertEquals(PostProcessorConfig.DEFAULT_USER_INSTRUCTIONS, config.systemPrompt)
     }
 
     @Test
@@ -49,7 +49,7 @@ class PostProcessorConfigTest {
         assertEquals(PostProcessorConfig.API_TYPE_ANTHROPIC, config.apiType)
         assertEquals(PostProcessorConfig.DEFAULT_ANTHROPIC_URL, config.baseUrl)
         assertEquals(PostProcessorConfig.DEFAULT_ANTHROPIC_MODEL, config.model)
-        assertEquals(PostProcessorConfig.DEFAULT_SYSTEM_PROMPT, config.systemPrompt)
+        assertEquals(PostProcessorConfig.DEFAULT_USER_INSTRUCTIONS, config.systemPrompt)
     }
 
     @Test

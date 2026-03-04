@@ -86,7 +86,7 @@ class TextPostProcessorTest {
     }
 
     @Test
-    fun `anthropic sends correct body`() = runBlocking {
+    fun `anthropic sends correct body with system prefix`() = runBlocking {
         server.enqueue(MockResponse()
             .setResponseCode(200)
             .setBody("""{"content": [{"type": "text", "text": "test"}]}"""))
@@ -97,7 +97,9 @@ class TextPostProcessorTest {
         val body = org.json.JSONObject(request.body.readUtf8())
         assertEquals("claude-haiku-4-5-20251001", body.getString("model"))
         assertEquals(2048, body.getInt("max_tokens"))
-        assertEquals("Clean up", body.getString("system"))
+        val system = body.getString("system")
+        assertTrue("System prompt should start with prefix", system.startsWith(PostProcessorConfig.SYSTEM_PREFIX))
+        assertTrue("System prompt should end with user instructions", system.endsWith("Clean up"))
         val messages = body.getJSONArray("messages")
         assertEquals(1, messages.length())
         assertEquals("user", messages.getJSONObject(0).getString("role"))
@@ -151,7 +153,7 @@ class TextPostProcessorTest {
     }
 
     @Test
-    fun `openai sends system prompt as message`() = runBlocking {
+    fun `openai sends system prompt with prefix as message`() = runBlocking {
         server.enqueue(MockResponse()
             .setResponseCode(200)
             .setBody("""{"choices": [{"message": {"content": "test"}}]}"""))
@@ -163,7 +165,9 @@ class TextPostProcessorTest {
         val messages = body.getJSONArray("messages")
         assertEquals(2, messages.length())
         assertEquals("system", messages.getJSONObject(0).getString("role"))
-        assertEquals("Be helpful", messages.getJSONObject(0).getString("content"))
+        val systemContent = messages.getJSONObject(0).getString("content")
+        assertTrue("System should start with prefix", systemContent.startsWith(PostProcessorConfig.SYSTEM_PREFIX))
+        assertTrue("System should end with user instructions", systemContent.endsWith("Be helpful"))
         assertEquals("user", messages.getJSONObject(1).getString("role"))
         assertEquals("input", messages.getJSONObject(1).getString("content"))
     }

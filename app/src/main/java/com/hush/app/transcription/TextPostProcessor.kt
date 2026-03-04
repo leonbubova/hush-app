@@ -45,9 +45,7 @@ class TextPostProcessor(
     }
 
     private fun buildSystemPrompt(): String {
-        val base = config.systemPrompt
-        // If user has customized the prompt beyond the default, their prompt is the full instruction
-        return base
+        return PostProcessorConfig.SYSTEM_PREFIX + config.systemPrompt
     }
 
     private fun callAnthropic(rawText: String): String {

@@ -769,11 +769,19 @@ private fun TextEnhancementPanel(
 
             Spacer(Modifier.height(12.dp))
 
-            // System prompt
+            // System prefix hint
+            Text(
+                "The AI always receives: \"${PostProcessorConfig.SYSTEM_PREFIX.trimEnd()}\" followed by your rules below:",
+                fontSize = 12.sp,
+                color = HushLabelColor.copy(alpha = 0.7f),
+                modifier = Modifier.padding(bottom = 8.dp),
+            )
+
+            // User formatting rules
             OutlinedTextField(
                 value = systemPrompt,
                 onValueChange = { systemPrompt = it },
-                label = { Text("System Prompt") },
+                label = { Text("Your formatting rules") },
                 minLines = 3,
                 maxLines = 8,
                 modifier = Modifier.fillMaxWidth(),
@@ -781,15 +789,15 @@ private fun TextEnhancementPanel(
             )
 
             // Reset to default button
-            if (systemPrompt != PostProcessorConfig.DEFAULT_SYSTEM_PROMPT) {
+            if (systemPrompt != PostProcessorConfig.DEFAULT_USER_INSTRUCTIONS) {
                 Spacer(Modifier.height(8.dp))
                 TextButton(
                     onClick = {
-                        systemPrompt = PostProcessorConfig.DEFAULT_SYSTEM_PROMPT
-                        onSave(currentConfig().copy(systemPrompt = PostProcessorConfig.DEFAULT_SYSTEM_PROMPT))
+                        systemPrompt = PostProcessorConfig.DEFAULT_USER_INSTRUCTIONS
+                        onSave(currentConfig().copy(systemPrompt = PostProcessorConfig.DEFAULT_USER_INSTRUCTIONS))
                     },
                 ) {
-                    Text("Reset prompt to default", color = HushLabelColor, fontSize = 13.sp)
+                    Text("Reset rules to default", color = HushLabelColor, fontSize = 13.sp)
                 }
             }
         }
