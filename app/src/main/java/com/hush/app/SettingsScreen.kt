@@ -769,19 +769,11 @@ private fun TextEnhancementPanel(
 
             Spacer(Modifier.height(12.dp))
 
-            // System prefix hint
-            Text(
-                "The AI always receives: \"${PostProcessorConfig.SYSTEM_PREFIX.trimEnd()}\" followed by your rules below:",
-                fontSize = 12.sp,
-                color = HushLabelColor.copy(alpha = 0.7f),
-                modifier = Modifier.padding(bottom = 8.dp),
-            )
-
-            // User formatting rules
+            // User system prompt
             OutlinedTextField(
                 value = systemPrompt,
                 onValueChange = { systemPrompt = it },
-                label = { Text("Your formatting rules") },
+                label = { Text("System prompt") },
                 minLines = 3,
                 maxLines = 8,
                 modifier = Modifier.fillMaxWidth(),

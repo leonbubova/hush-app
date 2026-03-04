@@ -86,10 +86,10 @@ class TextPostProcessorTest {
     }
 
     @Test
-    fun `anthropic sends correct body with system prefix`() = runBlocking {
+    fun `anthropic sends correct body with system prompt`() = runBlocking {
         server.enqueue(MockResponse()
             .setResponseCode(200)
-            .setBody("""{"content": [{"type": "text", "text": "test"}]}"""))
+            .setBody("""{"content": [{"type": "text", "text": "raw text"}]}"""))
 
         processor(model = "claude-haiku-4-5-20251001", systemPrompt = "Clean up").process("raw text")
 
@@ -97,13 +97,15 @@ class TextPostProcessorTest {
         val body = org.json.JSONObject(request.body.readUtf8())
         assertEquals("claude-haiku-4-5-20251001", body.getString("model"))
         assertEquals(2048, body.getInt("max_tokens"))
-        val system = body.getString("system")
-        assertTrue("System prompt should start with prefix", system.startsWith(PostProcessorConfig.SYSTEM_PREFIX))
-        assertTrue("System prompt should end with user instructions", system.endsWith("Clean up"))
+        assertEquals(0.0, body.getDouble("temperature"), 0.001)
+        assertEquals("Clean up", body.getString("system"))
         val messages = body.getJSONArray("messages")
         assertEquals(1, messages.length())
         assertEquals("user", messages.getJSONObject(0).getString("role"))
-        assertEquals("raw text", messages.getJSONObject(0).getString("content"))
+        val userContent = messages.getJSONObject(0).getString("content")
+        assertTrue("User content should be wrapped in transcription tags", userContent.contains("<transcription>"))
+        assertTrue("User content should contain raw text", userContent.contains("raw text"))
+        assertTrue("User content should close transcription tags", userContent.contains("</transcription>"))
     }
 
     @Test
@@ -153,23 +155,24 @@ class TextPostProcessorTest {
     }
 
     @Test
-    fun `openai sends system prompt with prefix as message`() = runBlocking {
+    fun `openai sends system prompt as message`() = runBlocking {
         server.enqueue(MockResponse()
             .setResponseCode(200)
-            .setBody("""{"choices": [{"message": {"content": "test"}}]}"""))
+            .setBody("""{"choices": [{"message": {"content": "input"}}]}"""))
 
         processor(apiType = PostProcessorConfig.API_TYPE_OPENAI, systemPrompt = "Be helpful").process("input")
 
         val request = server.takeRequest()
         val body = org.json.JSONObject(request.body.readUtf8())
+        assertEquals(0.0, body.getDouble("temperature"), 0.001)
         val messages = body.getJSONArray("messages")
         assertEquals(2, messages.length())
         assertEquals("system", messages.getJSONObject(0).getString("role"))
-        val systemContent = messages.getJSONObject(0).getString("content")
-        assertTrue("System should start with prefix", systemContent.startsWith(PostProcessorConfig.SYSTEM_PREFIX))
-        assertTrue("System should end with user instructions", systemContent.endsWith("Be helpful"))
+        assertEquals("Be helpful", messages.getJSONObject(0).getString("content"))
         assertEquals("user", messages.getJSONObject(1).getString("role"))
-        assertEquals("input", messages.getJSONObject(1).getString("content"))
+        val userContent = messages.getJSONObject(1).getString("content")
+        assertTrue("User content should be wrapped in transcription tags", userContent.contains("<transcription>"))
+        assertTrue("User content should contain raw text", userContent.contains("input"))
     }
 
     @Test
@@ -233,4 +236,5 @@ class TextPostProcessorTest {
 
         assertEquals("Hello, world.", result)
     }
+
 }

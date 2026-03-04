@@ -17,8 +17,10 @@ class HushApp : Application() {
     }
 
     private fun cleanOrphanedAudioFiles() {
+        val cutoff = System.currentTimeMillis() - 5 * 60 * 1000 // 5 minutes
         cacheDir.listFiles()?.filter {
-            it.name.startsWith("recording_") && it.extension == "m4a"
+            it.name.startsWith("recording_") && it.extension == "m4a" &&
+                it.lastModified() < cutoff
         }?.forEach { it.delete() }
     }
 

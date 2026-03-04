@@ -45,7 +45,11 @@ class TextPostProcessor(
     }
 
     private fun buildSystemPrompt(): String {
-        return PostProcessorConfig.SYSTEM_PREFIX + config.systemPrompt
+        return config.systemPrompt
+    }
+
+    private fun wrapTranscription(rawText: String): String {
+        return "<transcription>\n$rawText\n</transcription>"
     }
 
     private fun callAnthropic(rawText: String): String {
@@ -55,12 +59,12 @@ class TextPostProcessor(
         val body = JSONObject().apply {
             put("model", config.model)
             put("max_tokens", 2048)
-            put("temperature", 0.3)
+            put("temperature", 0.0)
             put("system", buildSystemPrompt())
             put("messages", JSONArray().apply {
                 put(JSONObject().apply {
                     put("role", "user")
-                    put("content", rawText)
+                    put("content", wrapTranscription(rawText))
                 })
             })
         }
@@ -101,7 +105,7 @@ class TextPostProcessor(
         val body = JSONObject().apply {
             put("model", config.model)
             put("max_tokens", 2048)
-            put("temperature", 0.3)
+            put("temperature", 0.0)
             put("messages", JSONArray().apply {
                 put(JSONObject().apply {
                     put("role", "system")
@@ -109,7 +113,7 @@ class TextPostProcessor(
                 })
                 put(JSONObject().apply {
                     put("role", "user")
-                    put("content", rawText)
+                    put("content", wrapTranscription(rawText))
                 })
             })
         }
