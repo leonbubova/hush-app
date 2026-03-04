@@ -10,8 +10,23 @@ The AI dictation app that works in flight mode. Speak anywhere, transcribe on yo
   <img src="screenshots/post_proccessing.png" width="280" alt="LLM post-processing settings" />
 </p>
 
+### Smart Post-Processing — Fix, Edit, and Format by Voice
+
+Hush doesn't just transcribe — it understands what you *meant*. With LLM post-processing enabled, your raw dictation is cleaned up in real time: grammar is fixed, filler words are removed, and spoken editing commands are followed.
+
+Say *"delete the last sentence"*, *"scratch that"*, *"replace meeting with call"*, or *"make it a list"* — and the AI handles it. No manual editing needed.
+
+<p align="center">
+  <video src="screenshots/post_proccessing_formatting_correction.mp4" width="320" autoplay loop muted playsinline>
+    Your browser does not support the video tag.
+  </video>
+</p>
+
+Works with Anthropic (Claude) or any OpenAI-compatible API. You control the formatting rules — the app ships with sensible defaults, and you can customize them in Settings.
+
 ## Features
 
+- **Smart post-processing** — AI cleans up your dictation: fixes grammar, removes filler words, follows spoken editing commands ("delete that", "make it a list", "replace X with Y"), and formats text — all via LLM. Powered by Claude Sonnet or any OpenAI-compatible API. Customizable rules in Settings.
 - **Privacy first** — on-device transcription by default, your audio never leaves your phone
 - **Voice-to-text anywhere** — double-tap volume down to start/stop recording from any app
 - **Auto-inject into text fields** — if a text field is focused, transcribed text is pasted directly at the cursor
@@ -22,7 +37,6 @@ The AI dictation app that works in flight mode. Speak anywhere, transcribe on yo
 - **Moonshine streaming** — real-time on-device transcription via [Moonshine SDK](#acknowledgements), live text as you speak
 - **Streaming overlay** — floating overlay shows live transcription text in external apps, single paste on stop
 - **Settings screen** — switch providers, configure API keys and models per provider
-- **LLM post-processing** — optional AI cleanup of transcriptions (grammar, punctuation, formatting) via Anthropic or any OpenAI-compatible API. On-device post-processing is coming soon.
 - **Custom blob/ring UI** — dark theme with animated glowing blobs and minimal ring-based mic button
 - **Transcription history** — recent transcriptions stored locally with tap-to-copy
 - **Usage dashboard** — streak tracking, transcription stats, weekly activity charts, cost estimates
