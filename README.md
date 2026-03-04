@@ -5,9 +5,9 @@
 The AI dictation app that works in flight mode. Speak anywhere, transcribe on your phone, no cloud required.
 
 <p align="center">
-  <img src="screenshots/listening_baseline.png" width="280" alt="Hush listening screen" />
-  &nbsp;&nbsp;
-  <img src="screenshots/post_proccessing.png" width="280" alt="LLM post-processing settings" />
+  <video src="screenshots/post_processing_video.mp4" width="320" autoplay loop muted playsinline>
+    Your browser does not support the video tag.
+  </video>
 </p>
 
 ### Smart Post-Processing — Fix, Edit, and Format by Voice
@@ -15,12 +15,6 @@ The AI dictation app that works in flight mode. Speak anywhere, transcribe on yo
 Hush doesn't just transcribe — it understands what you *meant*. With LLM post-processing enabled, your raw dictation is cleaned up in real time: grammar is fixed, filler words are removed, and spoken editing commands are followed.
 
 Say *"delete the last sentence"*, *"scratch that"*, *"replace meeting with call"*, or *"make it a list"* — and the AI handles it. No manual editing needed.
-
-<p align="center">
-  <video src="screenshots/post_proccessing_formatting_correction.mp4" width="320" autoplay loop muted playsinline>
-    Your browser does not support the video tag.
-  </video>
-</p>
 
 Works best with Claude Sonnet or Groq (Llama) — Haiku is too small to reliably follow editing commands. You control the formatting rules — the app ships with sensible defaults, and you can customize them in Settings.
 
